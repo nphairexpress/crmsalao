@@ -9,9 +9,28 @@ export interface Client {
   name: string;
   email: string | null;
   phone: string | null;
+  phone_landline: string | null;
   birth_date: string | null;
   notes: string | null;
   tags: string[];
+  gender: string | null;
+  cpf: string | null;
+  rg: string | null;
+  cep: string | null;
+  state: string | null;
+  city: string | null;
+  neighborhood: string | null;
+  address: string | null;
+  address_number: string | null;
+  address_complement: string | null;
+  how_met: string | null;
+  profession: string | null;
+  allow_email_campaigns: boolean;
+  allow_sms_campaigns: boolean;
+  allow_online_booking: boolean;
+  add_cpf_invoice: boolean;
+  allow_ai_service: boolean;
+  allow_whatsapp_campaigns: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -20,9 +39,28 @@ export interface ClientInput {
   name: string;
   email?: string;
   phone?: string;
+  phone_landline?: string;
   birth_date?: string;
   notes?: string;
   tags?: string[];
+  gender?: string;
+  cpf?: string;
+  rg?: string;
+  cep?: string;
+  state?: string;
+  city?: string;
+  neighborhood?: string;
+  address?: string;
+  address_number?: string;
+  address_complement?: string;
+  how_met?: string;
+  profession?: string;
+  allow_email_campaigns?: boolean;
+  allow_sms_campaigns?: boolean;
+  allow_online_booking?: boolean;
+  add_cpf_invoice?: boolean;
+  allow_ai_service?: boolean;
+  allow_whatsapp_campaigns?: boolean;
 }
 
 export function useClients() {

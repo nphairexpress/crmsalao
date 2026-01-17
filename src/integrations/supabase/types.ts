@@ -90,38 +90,95 @@ export type Database = {
       }
       clients: {
         Row: {
+          add_cpf_invoice: boolean | null
+          address: string | null
+          address_complement: string | null
+          address_number: string | null
+          allow_ai_service: boolean | null
+          allow_email_campaigns: boolean | null
+          allow_online_booking: boolean | null
+          allow_sms_campaigns: boolean | null
+          allow_whatsapp_campaigns: boolean | null
           birth_date: string | null
+          cep: string | null
+          city: string | null
+          cpf: string | null
           created_at: string
           email: string | null
+          gender: string | null
+          how_met: string | null
           id: string
           name: string
+          neighborhood: string | null
           notes: string | null
           phone: string | null
+          phone_landline: string | null
+          profession: string | null
+          rg: string | null
           salon_id: string
+          state: string | null
           tags: string[] | null
           updated_at: string
         }
         Insert: {
+          add_cpf_invoice?: boolean | null
+          address?: string | null
+          address_complement?: string | null
+          address_number?: string | null
+          allow_ai_service?: boolean | null
+          allow_email_campaigns?: boolean | null
+          allow_online_booking?: boolean | null
+          allow_sms_campaigns?: boolean | null
+          allow_whatsapp_campaigns?: boolean | null
           birth_date?: string | null
+          cep?: string | null
+          city?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
+          gender?: string | null
+          how_met?: string | null
           id?: string
           name: string
+          neighborhood?: string | null
           notes?: string | null
           phone?: string | null
+          phone_landline?: string | null
+          profession?: string | null
+          rg?: string | null
           salon_id: string
+          state?: string | null
           tags?: string[] | null
           updated_at?: string
         }
         Update: {
+          add_cpf_invoice?: boolean | null
+          address?: string | null
+          address_complement?: string | null
+          address_number?: string | null
+          allow_ai_service?: boolean | null
+          allow_email_campaigns?: boolean | null
+          allow_online_booking?: boolean | null
+          allow_sms_campaigns?: boolean | null
+          allow_whatsapp_campaigns?: boolean | null
           birth_date?: string | null
+          cep?: string | null
+          city?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
+          gender?: string | null
+          how_met?: string | null
           id?: string
           name?: string
+          neighborhood?: string | null
           notes?: string | null
           phone?: string | null
+          phone_landline?: string | null
+          profession?: string | null
+          rg?: string | null
           salon_id?: string
+          state?: string | null
           tags?: string[] | null
           updated_at?: string
         }
