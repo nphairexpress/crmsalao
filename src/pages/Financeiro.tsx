@@ -161,13 +161,33 @@ export default function Financeiro() {
                         size="icon"
                         onClick={() => {
                           const newDate = new Date(selectedDate);
-                          newDate.setMonth(newDate.getMonth() - 1);
+                          newDate.setDate(newDate.getDate() - 1);
                           setSelectedDate(newDate);
                         }}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       
+                      {/* Day Selector */}
+                      <Select
+                        value={selectedDate.getDate().toString()}
+                        onValueChange={(value) => {
+                          const newDate = setDate(selectedDate, parseInt(value));
+                          setSelectedDate(newDate);
+                        }}
+                      >
+                        <SelectTrigger className="w-[70px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: getDaysInMonth(selectedDate) }, (_, i) => (
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                              {String(i + 1).padStart(2, "0")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
                       {/* Month Selector */}
                       <Select
                         value={selectedDate.getMonth().toString()}
@@ -212,33 +232,13 @@ export default function Financeiro() {
                           })}
                         </SelectContent>
                       </Select>
-
-                      {/* Day Selector */}
-                      <Select
-                        value={selectedDate.getDate().toString()}
-                        onValueChange={(value) => {
-                          const newDate = setDate(selectedDate, parseInt(value));
-                          setSelectedDate(newDate);
-                        }}
-                      >
-                        <SelectTrigger className="w-[80px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: getDaysInMonth(selectedDate) }, (_, i) => (
-                            <SelectItem key={i + 1} value={(i + 1).toString()}>
-                              {i + 1}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                       
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={() => {
                           const newDate = new Date(selectedDate);
-                          newDate.setMonth(newDate.getMonth() + 1);
+                          newDate.setDate(newDate.getDate() + 1);
                           setSelectedDate(newDate);
                         }}
                       >
