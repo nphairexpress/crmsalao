@@ -138,7 +138,11 @@ export function AppointmentModal({
     onOpenChange(false);
   };
 
-  const selectedClient = appointment ? clients.find(c => c.id === appointment.client_id) : null;
+  // Get selected client - from appointment when editing, or from formData when selected
+  const selectedClient = useMemo(() => {
+    const clientId = appointment?.client_id || formData.client_id;
+    return clientId ? clients.find(c => c.id === clientId) : null;
+  }, [appointment?.client_id, formData.client_id, clients]);
 
   // Check if appointment is for today - only allow opening comanda for today's appointments
   const isAppointmentToday = useMemo(() => {
@@ -162,7 +166,7 @@ export function AppointmentModal({
           <DialogTitle>{appointment ? "Editar Agendamento" : "Novo Agendamento"}</DialogTitle>
         </DialogHeader>
         
-        {/* Client Info Header with Abrir Comanda button - only shows when editing and appointment is today */}
+        {/* Client Info Header with Abrir Comanda button - shows when editing existing appointment with client */}
         {appointment && selectedClient && (
           <div className="bg-muted/50 rounded-lg p-4 flex items-center justify-between">
             <div>
