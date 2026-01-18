@@ -297,15 +297,6 @@ export default function Comandas() {
   };
 
   const handleDeleteClick = (comanda: Comanda) => {
-    // Only closed comandas can be deleted with reason
-    if (!comanda.closed_at) {
-      toast({
-        title: "Não é possível excluir",
-        description: "Somente comandas fechadas podem ser excluídas.",
-        variant: "destructive",
-      });
-      return;
-    }
     setComandaToDelete(comanda);
     setDeleteModalOpen(true);
   };
@@ -557,16 +548,14 @@ export default function Comandas() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           )}
-                          {activeTab === "fechadas" && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteClick(comanda)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteClick(comanda)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary">
                             <Printer className="h-4 w-4" />
                           </Button>
@@ -672,6 +661,10 @@ export default function Comandas() {
         services={services}
         isEditingClosed={editingClosedComanda}
         userCaixaId={userOpenCaixaId}
+        onDelete={(comanda) => {
+          setComandaModalOpen(false);
+          handleDeleteClick(comanda);
+        }}
       />
 
       {/* Delete Comanda Modal */}
