@@ -65,9 +65,8 @@ const navItems: NavItem[] = [
     url: "/clientes", 
     icon: Users,
     subItems: [
-      { title: "Cadastros", url: "/clientes" },
-      { title: "Aniversariantes", url: "/clientes/aniversariantes" },
-      { title: "Segmentação", url: "/clientes/segmentacao" },
+      { title: "Lista de Clientes", url: "/clientes" },
+      { title: "Avisos", url: "/clientes/avisos" },
     ]
   },
   { 
@@ -75,9 +74,11 @@ const navItems: NavItem[] = [
     url: "/marketing", 
     icon: Megaphone,
     subItems: [
-      { title: "Campanhas", url: "/marketing" },
-      { title: "WhatsApp", url: "/marketing/whatsapp" },
-      { title: "Email", url: "/marketing/email" },
+      { title: "Promoções", url: "/marketing" },
+      { title: "Agendamento Online", url: "/marketing/agendamento" },
+      { title: "Campanhas de E-mail", url: "/marketing/email" },
+      { title: "Campanhas de SMS", url: "/marketing/sms" },
+      { title: "Fidelidade", url: "/marketing/fidelidade" },
     ]
   },
   { 
@@ -85,12 +86,10 @@ const navItems: NavItem[] = [
     url: "/relatorios", 
     icon: BarChart3,
     subItems: [
-      { title: "Vendas", url: "/relatorios" },
-      { title: "Serviços", url: "/relatorios/servicos" },
-      { title: "Profissionais", url: "/relatorios/profissionais" },
-      { title: "Clientes", url: "/relatorios/clientes" },
-      { title: "Produtos", url: "/relatorios/produtos" },
-      { title: "Comissões", url: "/relatorios/comissoes" },
+      { title: "Dashboard", url: "/relatorios" },
+      { title: "Favoritos", url: "/relatorios/favoritos" },
+      { title: "Todos", url: "/relatorios/todos" },
+      { title: "Mapa de Calor", url: "/relatorios/mapa-calor" },
     ]
   },
   { 
@@ -98,10 +97,10 @@ const navItems: NavItem[] = [
     url: "/configuracoes", 
     icon: Settings,
     subItems: [
-      { title: "Geral", url: "/configuracoes" },
+      { title: "Agendamento", url: "/configuracoes" },
       { title: "Serviços", url: "/servicos" },
       { title: "Profissionais", url: "/profissionais" },
-      { title: "Horários", url: "/configuracoes/horarios" },
+      { title: "Salão", url: "/configuracoes/salao" },
       { title: "Integrações", url: "/configuracoes/integracoes" },
     ]
   },
@@ -158,9 +157,9 @@ export function TopNavigation() {
         })}
       </nav>
 
-      {/* Sub navigation */}
+      {/* Sub navigation - styled like AVEC */}
       {activeNavItem?.subItems && (
-        <div className="flex items-center gap-1 px-4 py-1 bg-muted/30 border-t border-border">
+        <div className="flex items-center gap-0 px-4 bg-muted/20 border-t border-border">
           {activeNavItem.subItems.map((subItem) => {
             const isSubActive = location.pathname === subItem.url;
             
@@ -169,10 +168,10 @@ export function TopNavigation() {
                 key={subItem.url}
                 onClick={() => navigate(subItem.url)}
                 className={cn(
-                  "px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px]",
                   isSubActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "border-primary text-primary bg-primary/5" 
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 )}
               >
                 {subItem.title}
