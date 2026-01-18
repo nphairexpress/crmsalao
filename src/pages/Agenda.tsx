@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,12 +50,11 @@ export default function Agenda() {
   const { clients } = useClients();
   const { services } = useServices();
 
-  // Initialize selected professionals when they load
-  useState(() => {
+  useEffect(() => {
     if (professionals.length > 0 && selectedProfessionalIds.length === 0) {
-      setSelectedProfessionalIds(professionals.map(p => p.id));
+      setSelectedProfessionalIds(professionals.map((p) => p.id));
     }
-  });
+  }, [professionals, selectedProfessionalIds.length]);
 
   const formatMonthYear = (date: Date) => {
     return date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
