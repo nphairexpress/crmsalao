@@ -29,6 +29,7 @@ interface ComandaModalProps {
   services: any[];
   isEditingClosed?: boolean;
   userCaixaId?: string | null;
+  onDelete?: (comanda: Comanda) => void;
 }
 
 interface EditableItem extends ComandaItem {
@@ -53,7 +54,7 @@ const PAYMENT_METHODS = [
   { value: "other", label: "Outro", icon: Receipt },
 ];
 
-export function ComandaModal({ comanda, open, onClose, professionals, services, isEditingClosed = false, userCaixaId }: ComandaModalProps) {
+export function ComandaModal({ comanda, open, onClose, professionals, services, isEditingClosed = false, userCaixaId, onDelete }: ComandaModalProps) {
   const { toast } = useToast();
   const { salonId } = useAuth();
   const queryClient = useQueryClient();
@@ -699,7 +700,16 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             <Button variant="outline" size="icon">
               <Printer className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" className="text-destructive">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="text-destructive hover:text-destructive"
+              onClick={() => {
+                if (comanda && onDelete) {
+                  onDelete(comanda);
+                }
+              }}
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
             <Button variant="outline" onClick={onClose}>Confirmar</Button>
