@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,7 +88,7 @@ export function Profissionais() {
   };
 
   return (
-    <AppLayout title="Profissionais">
+    <AppLayoutNew>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex items-center justify-between mb-6">
           <TabsList>
@@ -272,6 +272,6 @@ export function Profissionais() {
         description={`Tem certeza que deseja excluir o profissional "${selectedProfessional?.name}"? Esta ação não pode ser desfeita.`}
         isLoading={isDeleting}
       />
-    </AppLayout>
+    </AppLayoutNew>
   );
 }

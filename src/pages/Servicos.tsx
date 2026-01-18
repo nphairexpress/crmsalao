@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,11 +27,11 @@ export default function Servicos() {
   const formatDuration = (min: number) => min >= 60 ? `${Math.floor(min / 60)}h${min % 60 ? ` ${min % 60}min` : ""}` : `${min}min`;
 
   if (isLoading) {
-    return <AppLayout title="Serviços"><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div></AppLayout>;
+    return <AppLayoutNew><div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div></AppLayoutNew>;
   }
 
   return (
-    <AppLayout title="Serviços">
+    <AppLayoutNew>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <p className="text-muted-foreground">Gerencie os serviços oferecidos pelo salão</p>
@@ -77,6 +77,6 @@ export default function Servicos() {
       </div>
       <ServiceModal open={modalOpen} onOpenChange={setModalOpen} service={selectedService} onSubmit={handleSubmit} isLoading={isCreating || isUpdating} />
       <DeleteConfirmModal open={deleteOpen} onOpenChange={setDeleteOpen} title="Excluir Serviço" description={`Tem certeza que deseja excluir "${selectedService?.name}"?`} onConfirm={() => { if (selectedService) { deleteService(selectedService.id); setDeleteOpen(false); } }} isLoading={isDeleting} />
-    </AppLayout>
+    </AppLayoutNew>
   );
 }

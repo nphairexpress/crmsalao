@@ -1,4 +1,4 @@
-import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Card, CardContent } from "@/components/ui/card";
 import { Construction } from "lucide-react";
 
@@ -8,7 +8,7 @@ interface PlaceholderPageProps {
 
 function PlaceholderPage({ title }: PlaceholderPageProps) {
   return (
-    <AppLayout title={title}>
+    <AppLayoutNew>
       <Card className="flex items-center justify-center min-h-[400px]">
         <CardContent className="text-center">
           <Construction className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -16,7 +16,7 @@ function PlaceholderPage({ title }: PlaceholderPageProps) {
           <p className="text-muted-foreground">Esta página será implementada em breve.</p>
         </CardContent>
       </Card>
-    </AppLayout>
+    </AppLayoutNew>
   );
 }
 

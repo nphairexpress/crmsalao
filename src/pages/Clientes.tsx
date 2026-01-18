@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,16 +49,16 @@ export default function Clientes() {
 
   if (isLoading) {
     return (
-      <AppLayout title="Clientes">
+      <AppLayoutNew>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </AppLayout>
+      </AppLayoutNew>
     );
   }
 
   return (
-    <AppLayout title="Clientes">
+    <AppLayoutNew>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -132,6 +132,6 @@ export default function Clientes() {
 
       <ClientModal open={modalOpen} onOpenChange={setModalOpen} client={selectedClient} onSubmit={handleSubmit} isLoading={isCreating || isUpdating} />
       <DeleteConfirmModal open={deleteOpen} onOpenChange={setDeleteOpen} title="Excluir Cliente" description={`Tem certeza que deseja excluir "${selectedClient?.name}"?`} onConfirm={() => { if (selectedClient) { deleteClient(selectedClient.id); setDeleteOpen(false); } }} isLoading={isDeleting} />
-    </AppLayout>
+    </AppLayoutNew>
   );
 }
