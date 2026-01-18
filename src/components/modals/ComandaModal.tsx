@@ -28,6 +28,7 @@ interface ComandaModalProps {
   professionals: any[];
   services: any[];
   isEditingClosed?: boolean;
+  userCaixaId?: string | null;
 }
 
 interface EditableItem extends ComandaItem {
@@ -52,7 +53,7 @@ const PAYMENT_METHODS = [
   { value: "other", label: "Outro", icon: Receipt },
 ];
 
-export function ComandaModal({ comanda, open, onClose, professionals, services, isEditingClosed = false }: ComandaModalProps) {
+export function ComandaModal({ comanda, open, onClose, professionals, services, isEditingClosed = false, userCaixaId }: ComandaModalProps) {
   const { toast } = useToast();
   const { salonId } = useAuth();
   const queryClient = useQueryClient();

@@ -88,6 +88,68 @@ export type Database = {
           },
         ]
       }
+      caixas: {
+        Row: {
+          closed_at: string | null
+          closing_balance: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          opened_at: string
+          opening_balance: number
+          salon_id: string
+          total_cash: number | null
+          total_credit_card: number | null
+          total_debit_card: number | null
+          total_other: number | null
+          total_pix: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closing_balance?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opening_balance?: number
+          salon_id: string
+          total_cash?: number | null
+          total_credit_card?: number | null
+          total_debit_card?: number | null
+          total_other?: number | null
+          total_pix?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          closing_balance?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opening_balance?: number
+          salon_id?: string
+          total_cash?: number | null
+          total_credit_card?: number | null
+          total_debit_card?: number | null
+          total_other?: number | null
+          total_pix?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caixas_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_history: {
         Row: {
           action_type: string
@@ -348,6 +410,7 @@ export type Database = {
       comandas: {
         Row: {
           appointment_id: string | null
+          caixa_id: string | null
           client_id: string | null
           closed_at: string | null
           created_at: string
@@ -362,6 +425,7 @@ export type Database = {
         }
         Insert: {
           appointment_id?: string | null
+          caixa_id?: string | null
           client_id?: string | null
           closed_at?: string | null
           created_at?: string
@@ -376,6 +440,7 @@ export type Database = {
         }
         Update: {
           appointment_id?: string | null
+          caixa_id?: string | null
           client_id?: string | null
           closed_at?: string | null
           created_at?: string
@@ -394,6 +459,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comandas_caixa_id_fkey"
+            columns: ["caixa_id"]
+            isOneToOne: false
+            referencedRelation: "caixas"
             referencedColumns: ["id"]
           },
           {
