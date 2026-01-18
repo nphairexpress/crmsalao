@@ -184,7 +184,7 @@ export function useCaixas() {
     if (!user || !salonId) return null;
 
     const today = new Date();
-    const { data, error } = await supabase
+    const { data: caixaData, error } = await supabase
       .from("caixas")
       .select("*")
       .eq("salon_id", salonId)
@@ -198,7 +198,20 @@ export function useCaixas() {
       console.error("Error fetching current user caixa:", error);
       return null;
     }
-    return data as Caixa | null;
+
+    if (!caixaData) return null;
+
+    // Fetch profile for this user
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, avatar_url")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    return {
+      ...caixaData,
+      profile: profileData || undefined,
+    } as Caixa;
   };
 
   // Get open caixas (all users)
