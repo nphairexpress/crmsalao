@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, MoreHorizontal, Loader2, Receipt, CheckCircle, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Plus, MoreHorizontal, Loader2, Receipt, CheckCircle, Clock, Pencil, Trash2, Printer } from "lucide-react";
 import { useComandas, Comanda, ComandaInput } from "@/hooks/useComandas";
 import { useClients } from "@/hooks/useClients";
 import { useProfessionals } from "@/hooks/useProfessionals";
@@ -19,6 +20,7 @@ import { ptBR } from "date-fns/locale";
 export default function Comandas() {
   const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("abertas");
   const [formData, setFormData] = useState<ComandaInput>({
     client_id: null,
     professional_id: null,
@@ -50,69 +52,108 @@ export default function Comandas() {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
   };
 
+  const getComandaNumber = (comanda: Comanda) => {
+    const date = new Date(comanda.created_at);
+    const dateStr = format(date, "dd/MM/yyyy");
+    return `Nº${comanda.id.slice(0, 4).toUpperCase()} (${dateStr})`;
+  };
+
   if (isLoading) {
     return (
-      <AppLayout title="Comandas">
+      <AppLayoutNew>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </AppLayout>
+      </AppLayoutNew>
     );
   }
 
   return (
-    <AppLayout title="Comandas">
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por cliente ou profissional..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+    <AppLayoutNew>
+      <div className="space-y-4">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
           <Button className="gap-2" onClick={() => setModalOpen(true)}>
             <Plus className="h-4 w-4" />
-            Nova Comanda
+            Abrir Comanda
           </Button>
+          <Badge variant="outline" className="gap-1 px-3 py-1.5">
+            Comandas Pendentes
+            <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs ml-1">
+              {openComandas.length}
+            </span>
+          </Badge>
         </div>
 
-        {/* Comandas Abertas */}
+        {/* Table Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Mostrar</span>
+            <Select defaultValue="10">
+              <SelectTrigger className="w-20 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-muted-foreground">por página</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">Print</Button>
+            <Button variant="outline" size="sm">Excel</Button>
+            <Button variant="outline" size="sm">PDF</Button>
+            <div className="relative">
+              <span className="text-sm text-muted-foreground mr-2">Buscar:</span>
+              <Input 
+                placeholder="" 
+                className="w-48 h-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Comandas Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-warning" />
-              Comandas Abertas ({openComandas.length})
-            </CardTitle>
-          </CardHeader>
           <CardContent className="p-0">
-            {openComandas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <p>Nenhuma comanda aberta</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="cursor-pointer hover:bg-muted/50">
+                    Comanda ▼
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50">
+                    Cliente ▼
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50">
+                    Data de abertura ▼
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:bg-muted/50 text-right">
+                    Valor ▼
+                  </TableHead>
+                  <TableHead className="text-center">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(activeTab === "abertas" ? openComandas : closedComandas).length === 0 ? (
                   <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Profissional</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="w-10"></TableHead>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Nenhuma comanda encontrada
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {openComandas.map((comanda) => (
+                ) : (
+                  (activeTab === "abertas" ? openComandas : closedComandas).map((comanda) => (
                     <TableRow key={comanda.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Receipt className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{comanda.client?.name || "Cliente não definido"}</span>
-                        </div>
+                      <TableCell className="font-medium">
+                        {getComandaNumber(comanda)}
                       </TableCell>
-                      <TableCell>{comanda.professional?.name || "-"}</TableCell>
+                      <TableCell className="uppercase">
+                        {comanda.client?.name || "Cliente não definido"}
+                      </TableCell>
                       <TableCell>
                         {format(new Date(comanda.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </TableCell>
@@ -120,77 +161,36 @@ export default function Comandas() {
                         {formatCurrency(comanda.total)}
                       </TableCell>
                       <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => closeComanda(comanda.id)} disabled={isClosing}>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Fechar Comanda
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary">
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
-        {/* Comandas Fechadas */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              Comandas Fechadas ({closedComandas.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {closedComandas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <p>Nenhuma comanda fechada</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Profissional</TableHead>
-                    <TableHead>Fechada em</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {closedComandas.map((comanda) => (
-                    <TableRow key={comanda.id}>
-                      <TableCell>
-                        <span className="font-medium">{comanda.client?.name || "Cliente não definido"}</span>
-                      </TableCell>
-                      <TableCell>{comanda.professional?.name || "-"}</TableCell>
-                      <TableCell>
-                        {comanda.closed_at && format(new Date(comanda.closed_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(comanda.total)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={comanda.is_paid ? "default" : "secondary"}>
-                          {comanda.is_paid ? "Pago" : "Pendente"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {/* Pagination */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>Mostrando 1 até {Math.min(10, openComandas.length)} de {openComandas.length} registros</span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" disabled>← Anterior</Button>
+            <Button variant="default" size="sm">1</Button>
+            <Button variant="outline" size="sm">2</Button>
+            <Button variant="outline" size="sm">Próximo →</Button>
+          </div>
+        </div>
       </div>
 
       {/* Modal Nova Comanda */}
@@ -247,6 +247,6 @@ export default function Comandas() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppLayout>
+    </AppLayoutNew>
   );
 }

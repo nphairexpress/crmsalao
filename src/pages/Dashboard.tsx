@@ -1,4 +1,4 @@
-import { AppLayout } from "@/components/layout/AppLayout";
+import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { UpcomingAppointments } from "@/components/dashboard/UpcomingAppointments";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
@@ -7,7 +7,7 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 
 export default function Dashboard() {
   return (
-    <AppLayout title="Dashboard">
+    <AppLayoutNew>
       <div className="space-y-6">
         {/* Stats Cards */}
         <DashboardStats />
@@ -29,6 +29,6 @@ export default function Dashboard() {
         {/* Upcoming Appointments */}
         <UpcomingAppointments />
       </div>
-    </AppLayout>
+    </AppLayoutNew>
   );
 }
