@@ -12,7 +12,8 @@ import AuthNew from "./pages/AuthNew";
 import SetupSalon from "./pages/SetupSalon";
 import { Profissionais } from "./pages/Profissionais";
 import Comandas from "./pages/Comandas";
-import { Financeiro, Estoque, Marketing, Relatorios, Configuracoes } from "./pages/PlaceholderPages";
+import Financeiro from "./pages/Financeiro";
+import { Estoque, Marketing, Relatorios, Configuracoes } from "./pages/PlaceholderPages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

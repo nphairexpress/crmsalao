@@ -10,19 +10,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Loader2, Pencil, Trash2, Printer, Eye, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, Printer, Eye, FileSpreadsheet, FileText, AlertTriangle } from "lucide-react";
 import { ComandaModal } from "@/components/modals/ComandaModal";
 import { DeleteComandaModal } from "@/components/modals/DeleteComandaModal";
 import { useComandas, Comanda, ComandaInput } from "@/hooks/useComandas";
 import { useClients } from "@/hooks/useClients";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { useServices } from "@/hooks/useServices";
+import { useCaixas } from "@/hooks/useCaixas";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+
 interface AppointmentData {
   id: string;
   client_id: string | null;
@@ -56,6 +58,7 @@ export default function Comandas() {
   const [comandaToDelete, setComandaToDelete] = useState<Comanda | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingClosedComanda, setEditingClosedComanda] = useState(false);
+  const [userOpenCaixaId, setUserOpenCaixaId] = useState<string | null>(null);
 
   const { user, salonId } = useAuth();
   const queryClient = useQueryClient();
@@ -63,6 +66,16 @@ export default function Comandas() {
   const { clients } = useClients();
   const { professionals } = useProfessionals();
   const { services } = useServices();
+  const { getCurrentUserOpenCaixa, openCaixas } = useCaixas();
+
+  // Check for user's open caixa
+  useEffect(() => {
+    const checkCaixa = async () => {
+      const caixa = await getCurrentUserOpenCaixa();
+      setUserOpenCaixaId(caixa?.id || null);
+    };
+    checkCaixa();
+  }, [openCaixas]);
 
   // Process appointment parameter from URL
   useEffect(() => {
@@ -76,6 +89,18 @@ export default function Comandas() {
     setIsProcessingAppointment(true);
     
     try {
+      // Check if user has open caixa
+      const userCaixa = await getCurrentUserOpenCaixa();
+      if (!userCaixa) {
+        toast({ 
+          title: "Caixa não aberto", 
+          description: "Você precisa abrir um caixa antes de criar comandas.",
+          variant: "destructive" 
+        });
+        navigate("/financeiro");
+        return;
+      }
+
       // Fetch appointment data
       const { data: appointment, error } = await supabase
         .from("appointments")
@@ -138,6 +163,14 @@ export default function Comandas() {
         appointmentData.id
       );
 
+      // Link comanda to user's caixa if not already linked
+      if (!comanda.caixa_id) {
+        await supabase
+          .from("comandas")
+          .update({ caixa_id: userCaixa.id })
+          .eq("id", comanda.id);
+      }
+
       // Check if service already exists in comanda items
       if (appointmentData.service_id && comanda.id) {
         const { data: existingItems } = await supabase
@@ -198,11 +231,41 @@ export default function Comandas() {
     );
   });
 
+  const today = startOfDay(new Date());
+  
+  // Open comandas from today
   const openComandas = filteredComandas.filter((c) => !c.closed_at);
+  
+  // Closed comandas
   const closedComandas = filteredComandas.filter((c) => c.closed_at);
+  
+  // Pending comandas - open but not from today
+  const pendingComandas = filteredComandas.filter((c) => {
+    if (c.closed_at) return false;
+    const createdDate = startOfDay(new Date(c.created_at));
+    return createdDate.getTime() < today.getTime();
+  });
+  
+  // Today's open comandas only
+  const todayOpenComandas = openComandas.filter((c) => {
+    const createdDate = startOfDay(new Date(c.created_at));
+    return createdDate.getTime() === today.getTime();
+  });
 
-  const handleCreate = () => {
-    createComanda(formData);
+  const handleCreate = async () => {
+    // Check if user has open caixa
+    const userCaixa = await getCurrentUserOpenCaixa();
+    if (!userCaixa) {
+      toast({ 
+        title: "Caixa não aberto", 
+        description: "Você precisa abrir um caixa antes de criar comandas.",
+        variant: "destructive" 
+      });
+      navigate("/financeiro");
+      return;
+    }
+
+    createComanda({ ...formData, caixa_id: userCaixa.id });
     setModalOpen(false);
     setFormData({ client_id: null, professional_id: null });
   };
@@ -296,6 +359,19 @@ export default function Comandas() {
     }
   };
 
+  const getDisplayComandas = () => {
+    switch (activeTab) {
+      case "abertas":
+        return todayOpenComandas;
+      case "fechadas":
+        return closedComandas;
+      case "pendentes":
+        return pendingComandas;
+      default:
+        return todayOpenComandas;
+    }
+  };
+
   if (isLoading || isProcessingAppointment) {
     return (
       <AppLayoutNew>
@@ -314,23 +390,40 @@ export default function Comandas() {
       <div className="space-y-4">
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          <Button className="gap-2" onClick={() => setModalOpen(true)}>
+          <Button className="gap-2" onClick={() => setModalOpen(true)} disabled={!userOpenCaixaId}>
             <Plus className="h-4 w-4" />
             Abrir Comanda
           </Button>
-          <Badge variant="outline" className="gap-1 px-3 py-1.5">
-            Comandas Pendentes
-            <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs ml-1">
-              {openComandas.length}
-            </span>
-          </Badge>
+          {!userOpenCaixaId && (
+            <Badge variant="destructive" className="gap-1 px-3 py-1.5">
+              <AlertTriangle className="h-3 w-3" />
+              Abra um caixa para criar comandas
+            </Badge>
+          )}
+          {pendingComandas.length > 0 && (
+            <Badge 
+              variant="outline" 
+              className="gap-1 px-3 py-1.5 cursor-pointer border-orange-500 text-orange-600"
+              onClick={() => setActiveTab("pendentes")}
+            >
+              Comandas Pendentes
+              <span className="bg-orange-500 text-white rounded-full px-2 py-0.5 text-xs ml-1">
+                {pendingComandas.length}
+              </span>
+            </Badge>
+          )}
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="abertas">Abertas ({openComandas.length})</TabsTrigger>
+            <TabsTrigger value="abertas">Abertas ({todayOpenComandas.length})</TabsTrigger>
             <TabsTrigger value="fechadas">Fechadas ({closedComandas.length})</TabsTrigger>
+            {pendingComandas.length > 0 && (
+              <TabsTrigger value="pendentes" className="text-orange-600">
+                Pendentes ({pendingComandas.length})
+              </TabsTrigger>
+            )}
           </TabsList>
         </Tabs>
 
@@ -397,15 +490,19 @@ export default function Comandas() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(activeTab === "abertas" ? openComandas : closedComandas).length === 0 ? (
+                {getDisplayComandas().length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       Nenhuma comanda encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
-                  (activeTab === "abertas" ? openComandas : closedComandas).map((comanda) => (
-                    <TableRow key={comanda.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleOpenComanda(comanda)}>
+                  getDisplayComandas().map((comanda) => (
+                    <TableRow 
+                      key={comanda.id} 
+                      className={`cursor-pointer hover:bg-muted/50 ${activeTab === "pendentes" ? "bg-orange-50 dark:bg-orange-950/20" : ""}`}
+                      onClick={() => handleOpenComanda(comanda)}
+                    >
                       <TableCell className="font-medium">
                         {getComandaNumber(comanda)}
                       </TableCell>
@@ -458,7 +555,7 @@ export default function Comandas() {
 
         {/* Pagination */}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Mostrando 1 até {Math.min(10, (activeTab === "abertas" ? openComandas : closedComandas).length)} de {(activeTab === "abertas" ? openComandas : closedComandas).length} registros</span>
+          <span>Mostrando 1 até {Math.min(10, getDisplayComandas().length)} de {getDisplayComandas().length} registros</span>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" disabled>← Anterior</Button>
             <Button variant="default" size="sm">1</Button>
@@ -530,6 +627,7 @@ export default function Comandas() {
         professionals={professionals}
         services={services}
         isEditingClosed={editingClosedComanda}
+        userCaixaId={userOpenCaixaId}
       />
 
       {/* Delete Comanda Modal */}

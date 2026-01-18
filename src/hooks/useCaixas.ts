@@ -1,0 +1,229 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { isSameDay, startOfDay, endOfDay } from "date-fns";
+
+export interface Caixa {
+  id: string;
+  salon_id: string;
+  user_id: string;
+  opened_at: string;
+  closed_at: string | null;
+  opening_balance: number;
+  closing_balance: number | null;
+  total_cash: number;
+  total_pix: number;
+  total_credit_card: number;
+  total_debit_card: number;
+  total_other: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
+export interface CaixaInput {
+  opening_balance: number;
+  notes?: string;
+}
+
+export function useCaixas() {
+  const { salonId } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: caixas = [], isLoading, error } = useQuery({
+    queryKey: ["caixas", salonId],
+    queryFn: async () => {
+      if (!salonId) return [];
+      
+      // Fetch caixas
+      const { data: caixasData, error: caixasError } = await supabase
+        .from("caixas")
+        .select("*")
+        .eq("salon_id", salonId)
+        .order("opened_at", { ascending: false });
+
+      if (caixasError) throw caixasError;
+
+      // Fetch profiles for all user_ids
+      const userIds = [...new Set(caixasData.map(c => c.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", userIds);
+
+      // Map profiles to caixas
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      
+      return caixasData.map(caixa => ({
+        ...caixa,
+        profile: profileMap.get(caixa.user_id) || undefined,
+      })) as Caixa[];
+    },
+    enabled: !!salonId,
+  });
+
+  const openCaixaMutation = useMutation({
+    mutationFn: async (input: CaixaInput) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !salonId) throw new Error("Usuário não autenticado");
+
+      // Check if user has an open caixa
+      const { data: existingOpen } = await supabase
+        .from("caixas")
+        .select("id")
+        .eq("salon_id", salonId)
+        .eq("user_id", user.id)
+        .is("closed_at", null)
+        .maybeSingle();
+
+      if (existingOpen) {
+        throw new Error("Você já possui um caixa aberto. Feche o caixa anterior antes de abrir um novo.");
+      }
+
+      const { data, error } = await supabase
+        .from("caixas")
+        .insert({
+          salon_id: salonId,
+          user_id: user.id,
+          opening_balance: input.opening_balance,
+          notes: input.notes,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
+      toast({ title: "Caixa aberto com sucesso" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao abrir caixa", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const closeCaixaMutation = useMutation({
+    mutationFn: async ({ caixaId, closingBalance, notes }: { caixaId: string; closingBalance: number; notes?: string }) => {
+      const { data, error } = await supabase
+        .from("caixas")
+        .update({
+          closed_at: new Date().toISOString(),
+          closing_balance: closingBalance,
+          notes: notes,
+        })
+        .eq("id", caixaId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
+      toast({ title: "Caixa fechado com sucesso" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao fechar caixa", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateCaixaTotalsMutation = useMutation({
+    mutationFn: async ({ caixaId, paymentMethod, amount }: { caixaId: string; paymentMethod: string; amount: number }) => {
+      const { data: currentCaixa, error: fetchError } = await supabase
+        .from("caixas")
+        .select("*")
+        .eq("id", caixaId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const updates: Partial<Caixa> = {};
+      switch (paymentMethod) {
+        case "cash":
+          updates.total_cash = (currentCaixa.total_cash || 0) + amount;
+          break;
+        case "pix":
+          updates.total_pix = (currentCaixa.total_pix || 0) + amount;
+          break;
+        case "credit_card":
+          updates.total_credit_card = (currentCaixa.total_credit_card || 0) + amount;
+          break;
+        case "debit_card":
+          updates.total_debit_card = (currentCaixa.total_debit_card || 0) + amount;
+          break;
+        case "other":
+          updates.total_other = (currentCaixa.total_other || 0) + amount;
+          break;
+      }
+
+      const { data, error } = await supabase
+        .from("caixas")
+        .update(updates)
+        .eq("id", caixaId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
+    },
+  });
+
+  // Get the current user's open caixa
+  const getCurrentUserOpenCaixa = async (): Promise<Caixa | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !salonId) return null;
+
+    const today = new Date();
+    const { data, error } = await supabase
+      .from("caixas")
+      .select("*")
+      .eq("salon_id", salonId)
+      .eq("user_id", user.id)
+      .is("closed_at", null)
+      .gte("opened_at", startOfDay(today).toISOString())
+      .lte("opened_at", endOfDay(today).toISOString())
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching current user caixa:", error);
+      return null;
+    }
+    return data as Caixa | null;
+  };
+
+  // Get open caixas (all users)
+  const openCaixas = caixas.filter(c => !c.closed_at);
+
+  // Get closed caixas
+  const closedCaixas = caixas.filter(c => c.closed_at);
+
+  // Get caixas by date
+  const getCaixasByDate = (date: Date) => {
+    return caixas.filter(c => isSameDay(new Date(c.opened_at), date));
+  };
+
+  return {
+    caixas,
+    openCaixas,
+    closedCaixas,
+    isLoading,
+    error,
+    openCaixa: openCaixaMutation.mutate,
+    closeCaixa: closeCaixaMutation.mutate,
+    updateCaixaTotals: updateCaixaTotalsMutation.mutate,
+    getCurrentUserOpenCaixa,
+    getCaixasByDate,
+    isOpening: openCaixaMutation.isPending,
+    isClosing: closeCaixaMutation.isPending,
+  };
+}

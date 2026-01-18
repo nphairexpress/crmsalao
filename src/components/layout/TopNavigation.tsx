@@ -36,8 +36,7 @@ const navItems: NavItem[] = [
     subItems: [
       { title: "Caixas Abertos", url: "/financeiro" },
       { title: "Histórico de Caixas", url: "/financeiro/historico" },
-      { title: "Comandas Abertas", url: "/comandas" },
-      { title: "Comandas Finalizadas", url: "/comandas/finalizadas" },
+      { title: "Comandas", url: "/comandas" },
       { title: "Comissões", url: "/financeiro/comissoes" },
       { title: "Entradas e Saídas", url: "/financeiro/entradas-saidas" },
       { title: "Notas Fiscais", url: "/financeiro/notas" },

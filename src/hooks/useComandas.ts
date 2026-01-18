@@ -9,6 +9,7 @@ export interface Comanda {
   client_id: string | null;
   professional_id: string | null;
   appointment_id: string | null;
+  caixa_id: string | null;
   subtotal: number;
   discount: number;
   total: number;
@@ -43,6 +44,7 @@ export interface ComandaInput {
   client_id?: string | null;
   professional_id?: string | null;
   appointment_id?: string | null;
+  caixa_id?: string | null;
   discount?: number;
 }
 
