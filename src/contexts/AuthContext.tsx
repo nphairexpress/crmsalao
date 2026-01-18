@@ -8,8 +8,14 @@ interface AuthContextType {
   loading: boolean;
   salonId: string | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string, salonName: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    salonName: string
+  ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  createSalonForCurrentUser: (fullName: string, salonName: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,9 +74,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
+  const createSalonForCurrentUser = async (fullName: string, salonName: string) => {
+    if (!user) return { error: new Error("Usuário não autenticado") };
+
+    // Create salon
+    const { data: salonData, error: salonError } = await supabase
+      .from("salons")
+      .insert({ name: salonName })
+      .select()
+      .single();
+
+    if (salonError) return { error: salonError as Error };
+
+    // Create profile
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({
+        user_id: user.id,
+        salon_id: salonData.id,
+        full_name: fullName,
+      });
+
+    if (profileError) return { error: profileError as Error };
+
+    // Create admin role
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert({
+        user_id: user.id,
+        salon_id: salonData.id,
+        role: "admin",
+      });
+
+    if (roleError) return { error: roleError as Error };
+
+    setSalonId(salonData.id);
+    return { error: null };
+  };
+
   const signUp = async (email: string, password: string, fullName: string, salonName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     // Create the user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -123,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, salonId, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, salonId, signIn, signUp, signOut, createSalonForCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );
