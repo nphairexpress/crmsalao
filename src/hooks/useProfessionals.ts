@@ -50,11 +50,7 @@ export function useProfessionals() {
     queryKey: ["professionals", salonId],
     queryFn: async () => {
       if (!salonId) return [];
-      const { data, error } = await supabase
-        .from("professionals")
-        .select("*")
-        .eq("salon_id", salonId)
-        .order("name");
+      const { data, error } = await supabase.from("professionals").select("*").eq("salon_id", salonId).order("name");
       if (error) throw error;
       return data as Professional[];
     },
@@ -66,7 +62,7 @@ export function useProfessionals() {
       if (!salonId) throw new Error("Salão não encontrado");
 
       const { password, ...professionalData } = input;
-      
+
       // First create the professional record
       const { data, error } = await supabase
         .from("professionals")
@@ -92,7 +88,7 @@ export function useProfessionals() {
           console.error("Error creating access:", accessError);
           throw new Error(`Profissional criado, mas erro ao criar acesso: ${accessError.message}`);
         }
-        
+
         return { ...data, accessCreated: true };
       }
 
@@ -101,8 +97,8 @@ export function useProfessionals() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["professionals", salonId] });
       if (data?.accessCreated) {
-        toast({ 
-          title: "Profissional criado com acesso!", 
+        toast({
+          title: "Profissional criado com acesso!",
           description: "O profissional pode fazer login com o email e senha definidos.",
         });
       } else {
@@ -116,12 +112,7 @@ export function useProfessionals() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...input }: ProfessionalInput & { id: string }) => {
-      const { data, error } = await supabase
-        .from("professionals")
-        .update(input)
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("professionals").update(input).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },
@@ -130,6 +121,7 @@ export function useProfessionals() {
       toast({ title: "Profissional atualizado com sucesso!" });
     },
     onError: (error: Error) => {
+      console.log(supabase.from("professionals").select("id", id));
       toast({ title: "Erro ao atualizar profissional", description: error.message, variant: "destructive" });
     },
   });
