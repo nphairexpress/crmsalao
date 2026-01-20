@@ -949,18 +949,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          can_open_caixa: boolean
           id: string
           role: Database["public"]["Enums"]["app_role"]
           salon_id: string
           user_id: string
         }
         Insert: {
+          can_open_caixa?: boolean
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           salon_id: string
           user_id: string
         }
         Update: {
+          can_open_caixa?: boolean
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           salon_id?: string
