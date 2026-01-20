@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark } from "lucide-react";
+import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark, ArrowRightLeft } from "lucide-react";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useUserAccess, UserWithAccess } from "@/hooks/useUserAccess";
 import { useCardBrands, CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
@@ -35,7 +35,10 @@ import { useBankAccounts, BankAccount, BankAccountInput } from "@/hooks/useBankA
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { CardBrandModal } from "@/components/modals/CardBrandModal";
 import { BankAccountModal } from "@/components/modals/BankAccountModal";
+import { TransferMasterModal } from "@/components/modals/TransferMasterModal";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ROLE_LABELS: Record<AppRole, { label: string; description: string; color: string }> = {
   admin: { label: "Administrador", description: "Acesso total ao sistema", color: "bg-red-500" },
@@ -66,6 +69,7 @@ export default function Configuracoes() {
     deleteBankAccount,
   } = useBankAccounts();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithAccess | null>(null);
@@ -81,6 +85,10 @@ export default function Configuracoes() {
   const [selectedBankAccount, setSelectedBankAccount] = useState<BankAccount | null>(null);
   const [deleteBankAccountModalOpen, setDeleteBankAccountModalOpen] = useState(false);
   const [bankAccountToDelete, setBankAccountToDelete] = useState<BankAccount | null>(null);
+
+  // Master transfer states
+  const [transferMasterModalOpen, setTransferMasterModalOpen] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   const handleRoleChange = (userId: string, newRole: AppRole) => {
     if (!isMaster) {
@@ -194,6 +202,46 @@ export default function Configuracoes() {
       setBankAccountToDelete(null);
     }
   };
+
+  const handleTransferMaster = async (newMasterUserId: string) => {
+    setIsTransferring(true);
+    try {
+      const { error } = await supabase.functions.invoke("transfer-master-access", {
+        body: { newMasterUserId },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Acesso master transferido!",
+        description: "Você agora é administrador. Faça login novamente para aplicar as alterações.",
+      });
+
+      // Invalidate queries to refetch master email
+      queryClient.invalidateQueries({ queryKey: ["master-email"] });
+      
+      setTransferMasterModalOpen(false);
+      
+      // Sign out to force refresh
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        window.location.reload();
+      }, 2000);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao transferir acesso",
+        description: error.message || "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
+  // Get other users for master transfer (exclude current user and admins)
+  const eligibleUsersForMaster = users.filter(
+    u => u.user_id !== user?.id && u.role !== "admin"
+  );
 
   const getInitials = (name: string) => {
     return name
@@ -611,7 +659,7 @@ export default function Configuracoes() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="sistema">
+          <TabsContent value="sistema" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Configurações do Sistema</CardTitle>
@@ -621,6 +669,54 @@ export default function Configuracoes() {
                 <p className="text-muted-foreground">Em breve: configurações de notificações, horários, integrações.</p>
               </CardContent>
             </Card>
+
+            {/* Master Transfer Section - Only visible to master user */}
+            {isMaster && (
+              <Card className="border-red-200 dark:border-red-800">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <ArrowRightLeft className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <CardTitle className="text-lg text-red-600 dark:text-red-400">
+                      Transferir Acesso Master
+                    </CardTitle>
+                  </div>
+                  <CardDescription>
+                    Transfira seu acesso master para outro usuário. Esta ação é irreversível.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                      <p className="text-sm text-red-700 dark:text-red-300">
+                        <strong>Atenção:</strong> Ao transferir o acesso master, você perderá as permissões exclusivas de:
+                      </p>
+                      <ul className="mt-2 text-sm text-red-600 dark:text-red-400 list-disc list-inside">
+                        <li>Excluir registros do sistema</li>
+                        <li>Alterar permissões de outros usuários</li>
+                        <li>Remover acessos de usuários</li>
+                        <li>Transferir acesso master novamente</li>
+                      </ul>
+                    </div>
+                    
+                    {eligibleUsersForMaster.length > 0 ? (
+                      <Button
+                        variant="destructive"
+                        onClick={() => setTransferMasterModalOpen(true)}
+                        className="gap-2"
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                        Transferir Acesso Master
+                      </Button>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Não há outros usuários disponíveis para receber o acesso master. 
+                        Cadastre novos profissionais com acesso ao sistema primeiro.
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -672,6 +768,14 @@ export default function Configuracoes() {
         title="Excluir Conta Bancária"
         description={`Tem certeza que deseja excluir a conta "${bankAccountToDelete?.name}"? Esta ação não poderá ser desfeita.`}
         isLoading={deleteBankAccount.isPending}
+      />
+
+      <TransferMasterModal
+        open={transferMasterModalOpen}
+        onOpenChange={setTransferMasterModalOpen}
+        users={eligibleUsersForMaster}
+        onConfirm={handleTransferMaster}
+        isLoading={isTransferring}
       />
     </AppLayoutNew>
   );

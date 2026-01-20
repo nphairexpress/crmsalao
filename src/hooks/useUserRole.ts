@@ -12,13 +12,29 @@ interface UserRoleData {
   isLoading: boolean;
 }
 
-// Master user email - only this user can delete records
-const MASTER_USER_EMAIL = "vanieri_2006@hotmail.com";
-
 export function useUserRole(): UserRoleData {
   const { user, salonId } = useAuth();
 
-  const query = useQuery({
+  // Fetch master email from system config
+  const masterEmailQuery = useQuery({
+    queryKey: ["master-email"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("system_config")
+        .select("value")
+        .eq("key", "master_user_email")
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching master email:", error);
+        return "vanieri_2006@hotmail.com"; // Fallback
+      }
+      
+      return data?.value || "vanieri_2006@hotmail.com";
+    },
+  });
+
+  const roleQuery = useQuery({
     queryKey: ["user-role", user?.id, salonId],
     queryFn: async () => {
       if (!user?.id || !salonId) return null;
@@ -40,17 +56,18 @@ export function useUserRole(): UserRoleData {
     enabled: !!user?.id && !!salonId,
   });
 
-  const isMaster = user?.email === MASTER_USER_EMAIL;
-  const isAdmin = query.data === "admin";
+  const masterEmail = masterEmailQuery.data || "vanieri_2006@hotmail.com";
+  const isMaster = user?.email === masterEmail;
+  const isAdmin = roleQuery.data === "admin";
   
   // Only the master user can delete
   const canDelete = isMaster;
 
   return {
-    role: query.data ?? null,
+    role: roleQuery.data ?? null,
     isAdmin,
     isMaster,
     canDelete,
-    isLoading: query.isLoading,
+    isLoading: roleQuery.isLoading || masterEmailQuery.isLoading,
   };
 }

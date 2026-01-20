@@ -26,8 +26,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Master user email - only this user can delete records
-const MASTER_USER_EMAIL = "vanieri_2006@hotmail.com";
+// Fallback master user email - will be overridden by system config
+const DEFAULT_MASTER_EMAIL = "vanieri_2006@hotmail.com";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,8 +35,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [salonId, setSalonId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [masterEmail, setMasterEmail] = useState<string>(DEFAULT_MASTER_EMAIL);
 
   useEffect(() => {
+    // Fetch master email from system config
+    const fetchMasterEmail = async () => {
+      const { data } = await supabase
+        .from("system_config")
+        .select("value")
+        .eq("key", "master_user_email")
+        .maybeSingle();
+      
+      if (data?.value) {
+        setMasterEmail(data.value);
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -54,7 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
+    // THEN check for existing session and master email
+    fetchMasterEmail();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -140,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserRole(null);
   };
 
-  const isMaster = user?.email === MASTER_USER_EMAIL;
+  const isMaster = user?.email === masterEmail;
   const isAdmin = userRole === "admin";
   const canDelete = isMaster;
 
