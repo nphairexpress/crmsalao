@@ -27,12 +27,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil } from "lucide-react";
+import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark } from "lucide-react";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useUserAccess, UserWithAccess } from "@/hooks/useUserAccess";
 import { useCardBrands, CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
+import { useBankAccounts, BankAccount, BankAccountInput } from "@/hooks/useBankAccounts";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { CardBrandModal } from "@/components/modals/CardBrandModal";
+import { BankAccountModal } from "@/components/modals/BankAccountModal";
 import { useToast } from "@/hooks/use-toast";
 
 const ROLE_LABELS: Record<AppRole, { label: string; description: string; color: string }> = {
@@ -56,6 +58,13 @@ export default function Configuracoes() {
     isUpdating: isUpdatingBrand,
     isDeleting: isDeletingBrand 
   } = useCardBrands();
+  const {
+    bankAccounts,
+    isLoading: isLoadingBankAccounts,
+    createBankAccount,
+    updateBankAccount,
+    deleteBankAccount,
+  } = useBankAccounts();
   const { toast } = useToast();
   
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -66,6 +75,12 @@ export default function Configuracoes() {
   const [selectedCardBrand, setSelectedCardBrand] = useState<CardBrand | null>(null);
   const [deleteCardBrandModalOpen, setDeleteCardBrandModalOpen] = useState(false);
   const [cardBrandToDelete, setCardBrandToDelete] = useState<CardBrand | null>(null);
+
+  // Bank account states
+  const [bankAccountModalOpen, setBankAccountModalOpen] = useState(false);
+  const [selectedBankAccount, setSelectedBankAccount] = useState<BankAccount | null>(null);
+  const [deleteBankAccountModalOpen, setDeleteBankAccountModalOpen] = useState(false);
+  const [bankAccountToDelete, setBankAccountToDelete] = useState<BankAccount | null>(null);
 
   const handleRoleChange = (userId: string, newRole: AppRole) => {
     if (!isMaster) {
@@ -143,6 +158,40 @@ export default function Configuracoes() {
       deleteCardBrand(cardBrandToDelete.id);
       setDeleteCardBrandModalOpen(false);
       setCardBrandToDelete(null);
+    }
+  };
+
+  // Bank account handlers
+  const handleCreateBankAccount = () => {
+    setSelectedBankAccount(null);
+    setBankAccountModalOpen(true);
+  };
+
+  const handleEditBankAccount = (account: BankAccount) => {
+    setSelectedBankAccount(account);
+    setBankAccountModalOpen(true);
+  };
+
+  const handleSaveBankAccount = (data: BankAccountInput) => {
+    if (selectedBankAccount) {
+      updateBankAccount.mutate({ id: selectedBankAccount.id, ...data });
+    } else {
+      createBankAccount.mutate(data);
+    }
+    setBankAccountModalOpen(false);
+    setSelectedBankAccount(null);
+  };
+
+  const handleDeleteBankAccountClick = (account: BankAccount) => {
+    setBankAccountToDelete(account);
+    setDeleteBankAccountModalOpen(true);
+  };
+
+  const confirmDeleteBankAccount = () => {
+    if (bankAccountToDelete) {
+      deleteBankAccount.mutate(bankAccountToDelete.id);
+      setDeleteBankAccountModalOpen(false);
+      setBankAccountToDelete(null);
     }
   };
 
@@ -457,6 +506,97 @@ export default function Configuracoes() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Bank Accounts */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Landmark className="h-5 w-5" />
+                      Contas Bancárias (PIX)
+                    </CardTitle>
+                    <CardDescription>
+                      Cadastre as contas bancárias para destinar pagamentos via PIX.
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleCreateBankAccount} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Nova Conta
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isLoadingBankAccounts ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : bankAccounts.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Landmark className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Nenhuma conta bancária cadastrada.</p>
+                    <p className="text-sm">Adicione contas para selecionar o destino dos pagamentos PIX.</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Banco</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="w-[100px]">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {bankAccounts.map((account) => (
+                        <TableRow key={account.id}>
+                          <TableCell className="font-medium">{account.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={account.is_active ? "default" : "secondary"}>
+                              {account.is_active ? "Ativa" : "Inativa"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditBankAccount(account)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteBankAccountClick(account)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Info about bank accounts */}
+            <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Landmark className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-green-900 dark:text-green-100">Como funcionam as contas</h4>
+                    <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                      Ao receber um pagamento via PIX na comanda, você poderá selecionar para qual conta bancária 
+                      o valor está sendo destinado, facilitando o controle financeiro.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="salao">
@@ -512,6 +652,26 @@ export default function Configuracoes() {
         onSave={handleSaveCardBrand}
         cardBrand={selectedCardBrand}
         isLoading={isCreatingBrand || isUpdatingBrand}
+      />
+
+      <BankAccountModal
+        isOpen={bankAccountModalOpen}
+        onClose={() => {
+          setBankAccountModalOpen(false);
+          setSelectedBankAccount(null);
+        }}
+        onSave={handleSaveBankAccount}
+        bankAccount={selectedBankAccount}
+        isLoading={createBankAccount.isPending || updateBankAccount.isPending}
+      />
+
+      <DeleteConfirmModal
+        open={deleteBankAccountModalOpen}
+        onOpenChange={setDeleteBankAccountModalOpen}
+        onConfirm={confirmDeleteBankAccount}
+        title="Excluir Conta Bancária"
+        description={`Tem certeza que deseja excluir a conta "${bankAccountToDelete?.name}"? Esta ação não poderá ser desfeita.`}
+        isLoading={deleteBankAccount.isPending}
       />
     </AppLayoutNew>
   );
