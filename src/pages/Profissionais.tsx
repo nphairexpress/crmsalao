@@ -99,6 +99,21 @@ export function Profissionais() {
       .slice(0, 2);
   };
 
+  const SPECIALTY_LABELS: Record<string, string> = {
+    cabeleireiro: "Cabeleireiro(a)",
+    manicure: "Manicure",
+    esteticista: "Esteticista",
+    maquiador: "Maquiador(a)",
+    barbeiro: "Barbeiro",
+    depilador: "Depilador(a)",
+    massagista: "Massagista",
+    recepcionista: "Recepcionista",
+    gerente: "Gerente",
+    outro: "Outro",
+  };
+
+  const getSpecialtyLabel = (role: string) => SPECIALTY_LABELS[role] || role;
+
   return (
     <AppLayoutNew>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -177,8 +192,8 @@ export function Profissionais() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {professional.specialty ? (
-                            <Badge variant="secondary">{professional.specialty}</Badge>
+                          {(professional as any).role ? (
+                            <Badge variant="secondary">{getSpecialtyLabel((professional as any).role)}</Badge>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
@@ -244,7 +259,7 @@ export function Profissionais() {
                   <div>
                     <h2 className="text-xl font-semibold">{selectedForCommissions.name}</h2>
                     <p className="text-muted-foreground">
-                      Cargo: {(selectedForCommissions as any).role || "Não definido"} • 
+                      Especialidade: {getSpecialtyLabel((selectedForCommissions as any).role) || "Não definida"} • 
                       Comissão Padrão: {selectedForCommissions.commission_percent || 0}%
                     </p>
                   </div>
