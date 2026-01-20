@@ -88,6 +88,41 @@ export type Database = {
           },
         ]
       }
+      bank_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          salon_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          salon_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          salon_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       caixas: {
         Row: {
           closed_at: string | null
@@ -588,6 +623,7 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          bank_account_id: string | null
           card_brand_id: string | null
           comanda_id: string
           created_at: string
@@ -600,6 +636,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bank_account_id?: string | null
           card_brand_id?: string | null
           comanda_id: string
           created_at?: string
@@ -612,6 +649,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bank_account_id?: string | null
           card_brand_id?: string | null
           comanda_id?: string
           created_at?: string
@@ -623,6 +661,13 @@ export type Database = {
           salon_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_card_brand_id_fkey"
             columns: ["card_brand_id"]
