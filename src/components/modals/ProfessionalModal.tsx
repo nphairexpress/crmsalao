@@ -29,7 +29,7 @@ interface ProfessionalModalProps {
   isLoading?: boolean;
 }
 
-const ROLES = [
+const SPECIALTIES = [
   { value: "cabeleireiro", label: "Cabeleireiro(a)" },
   { value: "manicure", label: "Manicure" },
   { value: "esteticista", label: "Esteticista" },
@@ -196,11 +196,11 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
             </div>
           </div>
 
-          {/* Row 2: CPF e Cargo */}
+          {/* Row 2: CPF e Especialidade */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cpf">
-                Qual é o <span className="font-semibold">CPF</span>? <span className="text-destructive">*</span>
+                Qual é o <span className="font-semibold">CPF</span>?
               </Label>
               <Input
                 id="cpf"
@@ -211,7 +211,7 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">
-                Qual é o <span className="font-semibold">cargo</span>? <span className="text-destructive">*</span>
+                Qual é a <span className="font-semibold">especialidade</span>? <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={formData.role}
@@ -221,9 +221,9 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLES.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>
-                      {role.label}
+                  {SPECIALTIES.map((spec) => (
+                    <SelectItem key={spec.value} value={spec.value}>
+                      {spec.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -203,6 +203,24 @@ export default function Comissoes() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const SPECIALTY_LABELS: Record<string, string> = {
+    cabeleireiro: "Cabeleireiro(a)",
+    manicure: "Manicure",
+    esteticista: "Esteticista",
+    maquiador: "Maquiador(a)",
+    barbeiro: "Barbeiro",
+    depilador: "Depilador(a)",
+    massagista: "Massagista",
+    recepcionista: "Recepcionista",
+    gerente: "Gerente",
+    outro: "Outro",
+  };
+
+  const getSpecialtyLabel = (role: string | null | undefined) => {
+    if (!role) return null;
+    return SPECIALTY_LABELS[role] || role;
+  };
+
   const selectedProfessionalData = professionals.find(p => p.id === selectedProfessional);
 
   const isLoading = loadingProfessionals || loadingComandas || loadingServices || loadingClients;
@@ -254,7 +272,7 @@ export default function Comissoes() {
                     <SelectItem value="all">Todos</SelectItem>
                     {professionals.filter(p => p.is_active).map(prof => (
                       <SelectItem key={prof.id} value={prof.id}>
-                        {prof.name} {prof.role ? `- ${prof.role}` : ""}
+                        {prof.name} {(prof as any).role ? `- ${getSpecialtyLabel((prof as any).role)}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -301,7 +319,7 @@ export default function Comissoes() {
                     <div>
                       <h2 className="text-xl font-semibold">{selectedProfessionalData.name}</h2>
                       <p className="text-sm text-muted-foreground">
-                        {selectedProfessionalData.role || "Profissional"} • {commissionDetails.length} serviço{commissionDetails.length !== 1 ? "s" : ""} no período
+                        {getSpecialtyLabel((selectedProfessionalData as any).role) || "Profissional"} • {commissionDetails.length} serviço{commissionDetails.length !== 1 ? "s" : ""} no período
                       </p>
                     </div>
                   </div>
