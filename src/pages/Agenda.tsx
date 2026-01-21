@@ -31,12 +31,14 @@ const timeSlots = [
 ];
 
 const statusColors: Record<string, string> = {
-  scheduled: "bg-red-500 text-white",
-  confirmed: "bg-green-500 text-white",
-  in_progress: "bg-amber-500 text-white",
-  completed: "bg-emerald-600 text-white",
-  no_show: "bg-gray-400 text-white",
-  cancelled: "bg-gray-500 text-white",
+  scheduled: "bg-[#4a7c59] text-white",       // Verde escuro - Agendado
+  confirmed: "bg-[#3b82c4] text-white",       // Azul - Confirmado
+  in_progress: "bg-[#16a34a] text-white",     // Verde vivo - Em Atendimento
+  completed: "bg-[#3b5998] text-white",       // Azul escuro - Finalizado
+  paid: "bg-[#dc2626] text-white",            // Vermelho - Pago
+  awaiting: "bg-[#d4a127] text-white",        // Amarelo/Dourado - Aguardando
+  no_show: "bg-[#9ca3af] text-white",         // Cinza claro - Faltou
+  cancelled: "bg-[#6b7280] text-white",       // Cinza - Cancelado
   blocked: "bg-slate-700 text-white",
 };
 
