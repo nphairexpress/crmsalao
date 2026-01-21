@@ -23,6 +23,8 @@ interface CommissionItem {
   serviceName: string;
   clientName: string;
   serviceValue: number;
+  productCost: number;
+  netValue: number;
   commissionPercent: number;
   commissionValue: number;
   serviceId: string | null;
@@ -99,7 +101,9 @@ export default function Comissoes() {
         }
 
         const serviceValue = item.total_price || 0;
-        const commissionValue = (serviceValue * commissionPercent) / 100;
+        const productCost = item.product_cost || 0;
+        const netValue = serviceValue - productCost;
+        const commissionValue = (netValue * commissionPercent) / 100;
 
         // Use created_at for the date display to show when service was performed
         const displayDate = format(new Date(comanda.created_at), "dd/MM/yyyy");
@@ -111,6 +115,8 @@ export default function Comissoes() {
           serviceName: `${item.quantity || 1} x ${serviceName}`,
           clientName: comanda.client_id ? clientMap.get(comanda.client_id) || "Cliente" : "Cliente avulso",
           serviceValue,
+          productCost,
+          netValue,
           commissionPercent,
           commissionValue,
           serviceId: item.service_id,
@@ -125,11 +131,15 @@ export default function Comissoes() {
   // Calculate totals for selected professional
   const professionalTotals = useMemo(() => {
     const totalServices = commissionDetails.reduce((sum, item) => sum + item.serviceValue, 0);
+    const totalProductCost = commissionDetails.reduce((sum, item) => sum + item.productCost, 0);
+    const totalNetValue = commissionDetails.reduce((sum, item) => sum + item.netValue, 0);
     const totalCommission = commissionDetails.reduce((sum, item) => sum + item.commissionValue, 0);
     
     return {
       baseRateio: totalServices,
       servicos: totalServices,
+      productCost: totalProductCost,
+      netValue: totalNetValue,
       produtos: 0,
       pacotes: 0,
       rateioServicos: totalCommission,
@@ -148,6 +158,8 @@ export default function Comissoes() {
     const commissionMap = new Map<string, {
       professional: typeof professionals[0];
       totalServices: number;
+      productCost: number;
+      netValue: number;
       commission: number;
       discounts: number;
       totalToPay: number;
@@ -158,6 +170,8 @@ export default function Comissoes() {
       commissionMap.set(prof.id, {
         professional: prof,
         totalServices: 0,
+        productCost: 0,
+        netValue: 0,
         commission: 0,
         discounts: 0,
         totalToPay: 0,
@@ -183,9 +197,13 @@ export default function Comissoes() {
         }
 
         const itemTotal = item.total_price || 0;
-        const commission = (itemTotal * commissionPercent) / 100;
+        const productCost = item.product_cost || 0;
+        const netValue = itemTotal - productCost;
+        const commission = (netValue * commissionPercent) / 100;
 
         profData.totalServices += itemTotal;
+        profData.productCost += productCost;
+        profData.netValue += netValue;
         profData.commission += commission;
         profData.totalToPay += commission;
         profData.itemCount += 1;
@@ -353,9 +371,10 @@ export default function Comissoes() {
                         <TableHead>Data</TableHead>
                         <TableHead>Serviços e Produtos</TableHead>
                         <TableHead>Cliente</TableHead>
-                        <TableHead className="text-right">Valor Cobrado</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                        <TableHead className="text-right">Custo Prod.</TableHead>
+                        <TableHead className="text-right">Líquido</TableHead>
                         <TableHead className="text-right">Comissão</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -366,17 +385,21 @@ export default function Comissoes() {
                           <TableCell>{item.serviceName}</TableCell>
                           <TableCell>{item.clientName}</TableCell>
                           <TableCell className="text-right">{formatCurrency(item.serviceValue)}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant="secondary">{item.commissionPercent}%</Badge>
+                          <TableCell className="text-right text-destructive">
+                            {item.productCost > 0 ? `-${formatCurrency(item.productCost)}` : "-"}
                           </TableCell>
-                          <TableCell className="text-right font-medium text-primary">
-                            {formatCurrency(item.commissionValue)}
+                          <TableCell className="text-right">{formatCurrency(item.netValue)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Badge variant="secondary">{item.commissionPercent}%</Badge>
+                              <span className="font-medium text-primary">{formatCurrency(item.commissionValue)}</span>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
                       {commissionDetails.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                             Nenhum serviço encontrado no período
                           </TableCell>
                         </TableRow>
@@ -397,43 +420,48 @@ export default function Comissoes() {
                   {/* Base de Rateio Geral */}
                   <div className="pb-3 border-b">
                     <div className="flex justify-between font-medium mb-2">
-                      <span>Base de Rateio Geral:</span>
+                      <span>Base de Rateio (Valor dos Serviços):</span>
                       <span>{formatCurrency(professionalTotals.baseRateio)}</span>
                     </div>
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <div className="flex justify-between">
-                        <span>Produtos:</span>
-                        <span>{formatCurrency(professionalTotals.produtos)}</span>
-                      </div>
-                      <div className="flex justify-between">
                         <span>Serviços:</span>
                         <span>{formatCurrency(professionalTotals.servicos)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Pacotes:</span>
-                        <span>{formatCurrency(professionalTotals.pacotes)}</span>
+                    </div>
+                  </div>
+
+                  {/* Product Cost Deduction */}
+                  {professionalTotals.productCost > 0 && (
+                    <div className="pb-3 border-b">
+                      <div className="flex justify-between font-medium mb-2 text-destructive">
+                        <span>(-) Custo de Produtos:</span>
+                        <span>-{formatCurrency(professionalTotals.productCost)}</span>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        Produtos consumidos nos serviços realizados
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Net Value */}
+                  <div className="pb-3 border-b">
+                    <div className="flex justify-between font-medium mb-2">
+                      <span>Valor Líquido (Base para Comissão):</span>
+                      <span>{formatCurrency(professionalTotals.netValue)}</span>
                     </div>
                   </div>
 
                   {/* Rateio */}
                   <div className="pb-3 border-b">
                     <div className="flex justify-between font-medium mb-2">
-                      <span>Rateio:</span>
+                      <span>Rateio (Comissão):</span>
                       <span>{formatCurrency(professionalTotals.totalRateio)}</span>
                     </div>
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <div className="flex justify-between">
-                        <span>Serviços:</span>
+                        <span>Comissão sobre Serviços:</span>
                         <span>{formatCurrency(professionalTotals.rateioServicos)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Produtos:</span>
-                        <span>{formatCurrency(professionalTotals.rateioProdutos)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Pacotes:</span>
-                        <span>{formatCurrency(professionalTotals.rateioPacotes)}</span>
                       </div>
                     </div>
                   </div>

@@ -13,12 +13,17 @@ export interface Product {
   cost_price: number;
   sale_price: number;
   current_stock: number;
+  current_stock_fractional: number;
   min_stock: number;
   is_active: boolean;
   supplier_id: string | null;
   unit_of_measure: string;
   unit_quantity: number;
   is_for_resale: boolean;
+  is_for_consumption: boolean;
+  brand: string | null;
+  product_line: string | null;
+  commission_percent: number;
   created_at: string;
   updated_at: string;
 }
@@ -31,12 +36,17 @@ export interface ProductInput {
   cost_price?: number;
   sale_price?: number;
   current_stock?: number;
+  current_stock_fractional?: number;
   min_stock?: number;
   is_active?: boolean;
   supplier_id?: string | null;
   unit_of_measure?: string;
   unit_quantity?: number;
   is_for_resale?: boolean;
+  is_for_consumption?: boolean;
+  brand?: string;
+  product_line?: string;
+  commission_percent?: number;
 }
 
 export function useProducts() {

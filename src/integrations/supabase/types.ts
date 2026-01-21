@@ -772,16 +772,21 @@ export type Database = {
       }
       products: {
         Row: {
+          brand: string | null
           category: string | null
+          commission_percent: number | null
           cost_price: number | null
           created_at: string
           current_stock: number | null
+          current_stock_fractional: number | null
           description: string | null
           id: string
           is_active: boolean | null
+          is_for_consumption: boolean | null
           is_for_resale: boolean | null
           min_stock: number | null
           name: string
+          product_line: string | null
           sale_price: number | null
           salon_id: string
           sku: string | null
@@ -791,16 +796,21 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand?: string | null
           category?: string | null
+          commission_percent?: number | null
           cost_price?: number | null
           created_at?: string
           current_stock?: number | null
+          current_stock_fractional?: number | null
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_for_consumption?: boolean | null
           is_for_resale?: boolean | null
           min_stock?: number | null
           name: string
+          product_line?: string | null
           sale_price?: number | null
           salon_id: string
           sku?: string | null
@@ -810,16 +820,21 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand?: string | null
           category?: string | null
+          commission_percent?: number | null
           cost_price?: number | null
           created_at?: string
           current_stock?: number | null
+          current_stock_fractional?: number | null
           description?: string | null
           id?: string
           is_active?: boolean | null
+          is_for_consumption?: boolean | null
           is_for_resale?: boolean | null
           min_stock?: number | null
           name?: string
+          product_line?: string | null
           sale_price?: number | null
           salon_id?: string
           sku?: string | null
