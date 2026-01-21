@@ -23,6 +23,7 @@ import { ServiceSearchSelect } from "@/components/shared/ServiceSearchSelect";
 import { CaixaSelectModal } from "@/components/caixa/CaixaSelectModal";
 import { Caixa } from "@/hooks/useCaixas";
 import { useAllServiceProducts } from "@/hooks/useServiceProducts";
+import { useStockMovements } from "@/hooks/useStockMovements";
 
 interface ComandaModalProps {
   comanda: Comanda | null;
@@ -66,6 +67,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const [activeTab, setActiveTab] = useState("itens");
   const { items, isLoading, addItem, removeItem, isAdding, isRemoving } = useComandaItems(comanda?.id || null);
   const { calculateServiceCost } = useAllServiceProducts();
+  const { deductStockForServices } = useStockMovements();
   
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -567,8 +569,29 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         })
         .eq("id", comanda.id);
 
+      // Deduct stock for all services in the comanda
+      const serviceItems = editableItems
+        .filter(item => item.service_id)
+        .map(item => ({
+          serviceId: item.service_id!,
+          quantity: item.quantity,
+        }));
+
+      if (serviceItems.length > 0) {
+        try {
+          const movements = await deductStockForServices(serviceItems);
+          if (movements.length > 0) {
+            console.log("Estoque deduzido:", movements);
+          }
+        } catch (stockError) {
+          console.error("Erro na baixa de estoque:", stockError);
+          // Don't fail the comanda closure, just log the error
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["comandas", salonId] });
       queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
+      queryClient.invalidateQueries({ queryKey: ["products", salonId] });
       toast({ title: "Comanda finalizada com sucesso!" });
       onClose();
     } catch (error: any) {
