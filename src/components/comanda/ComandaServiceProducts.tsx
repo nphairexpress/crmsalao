@@ -44,8 +44,12 @@ export function ComandaServiceProducts({
   const [productUsages, setProductUsages] = useState<ProductUsage[]>([]);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newProductId, setNewProductId] = useState<string>("");
-  const [newProductQty, setNewProductQty] = useState<number>(1);
+  const [newProductQty, setNewProductQty] = useState<number>(0);
   const [initialized, setInitialized] = useState(false);
+
+  // Get selected product info for the add form
+  const selectedNewProduct = allProducts.find(p => p.id === newProductId);
+  const selectedProductIsFractional = selectedNewProduct && ["ml", "g", "dosagem"].includes(selectedNewProduct.unit_of_measure || "");
 
   // Initialize products from service configuration (only once)
   useEffect(() => {
@@ -159,9 +163,10 @@ export function ComandaServiceProducts({
 
   const isFractionalUnit = (unit: string) => ["ml", "g", "dosagem"].includes(unit);
 
-  // Filter available products (not already in list) - show ALL products, not just consumption ones
+  // Filter available products (not already in list) - show ONLY internal use products (is_for_consumption)
   const availableProducts = allProducts.filter(p => 
     p.is_active && 
+    p.is_for_consumption &&
     !productUsages.some(pu => pu.product_id === p.id)
   );
 
@@ -301,15 +306,22 @@ export function ComandaServiceProducts({
                 </SelectContent>
               </Select>
               
-              <Input
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="Qtd"
-                className="w-16 h-8 text-center bg-background"
-                value={newProductQty}
-                onChange={(e) => setNewProductQty(parseFloat(e.target.value) || 0)}
-              />
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min="0"
+                  step={selectedProductIsFractional ? "0.1" : "1"}
+                  placeholder="Qtd"
+                  className="w-16 h-8 text-center bg-background"
+                  value={newProductQty || ""}
+                  onChange={(e) => setNewProductQty(parseFloat(e.target.value) || 0)}
+                />
+                {selectedNewProduct && (
+                  <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[30px]">
+                    {getUnitLabel(selectedNewProduct.unit_of_measure || "unidade")}
+                  </span>
+                )}
+              </div>
               
               <Button
                 type="button"
