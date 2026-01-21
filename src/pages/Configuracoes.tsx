@@ -27,15 +27,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark, ArrowRightLeft } from "lucide-react";
+import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog } from "lucide-react";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useUserAccess, UserWithAccess } from "@/hooks/useUserAccess";
 import { useCardBrands, CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
 import { useBankAccounts, BankAccount, BankAccountInput } from "@/hooks/useBankAccounts";
+import { useAccessLevels, AccessLevelWithPermissions } from "@/hooks/useAccessLevels";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { CardBrandModal } from "@/components/modals/CardBrandModal";
 import { BankAccountModal } from "@/components/modals/BankAccountModal";
 import { TransferMasterModal } from "@/components/modals/TransferMasterModal";
+import { AccessLevelConfigModal } from "@/components/settings/AccessLevelConfigModal";
+import { CreateAccessLevelModal } from "@/components/settings/CreateAccessLevelModal";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,6 +71,17 @@ export default function Configuracoes() {
     updateBankAccount,
     deleteBankAccount,
   } = useBankAccounts();
+  const {
+    accessLevels,
+    isLoading: isLoadingAccessLevels,
+    createAccessLevel,
+    updateAccessLevel,
+    updatePermission,
+    deleteAccessLevel,
+    isCreating: isCreatingAccessLevel,
+    isUpdating: isUpdatingAccessLevel,
+    isDeleting: isDeletingAccessLevel,
+  } = useAccessLevels();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -89,6 +103,13 @@ export default function Configuracoes() {
   // Master transfer states
   const [transferMasterModalOpen, setTransferMasterModalOpen] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
+
+  // Access level states
+  const [accessLevelConfigModalOpen, setAccessLevelConfigModalOpen] = useState(false);
+  const [selectedAccessLevel, setSelectedAccessLevel] = useState<AccessLevelWithPermissions | null>(null);
+  const [createAccessLevelModalOpen, setCreateAccessLevelModalOpen] = useState(false);
+  const [deleteAccessLevelModalOpen, setDeleteAccessLevelModalOpen] = useState(false);
+  const [accessLevelToDelete, setAccessLevelToDelete] = useState<AccessLevelWithPermissions | null>(null);
 
   const handleRoleChange = (userId: string, newRole: AppRole) => {
     if (!isMaster) {
@@ -429,23 +450,93 @@ export default function Configuracoes() {
               </CardContent>
             </Card>
 
-            {/* Roles Description */}
+            {/* Access Levels Configuration */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Descrição dos Níveis de Acesso</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Configuração dos Níveis de Acesso</CardTitle>
+                    <CardDescription>
+                      Configure as permissões de cada nível ou crie níveis personalizados.
+                    </CardDescription>
+                  </div>
+                  {isMaster && (
+                    <Button onClick={() => setCreateAccessLevelModalOpen(true)} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Novo Nível
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {Object.entries(ROLE_LABELS).map(([key, value]) => (
-                    <div key={key} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
-                      <div className={`h-3 w-3 rounded-full ${value.color} mt-1`} />
-                      <div>
-                        <p className="font-medium">{value.label}</p>
-                        <p className="text-sm text-muted-foreground">{value.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {isLoadingAccessLevels ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : accessLevels.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum nível de acesso configurado.
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {accessLevels.map((level) => {
+                      const enabledCount = Object.values(level.permissions).filter(Boolean).length;
+                      const totalCount = Object.keys(level.permissions).length;
+                      
+                      return (
+                        <div
+                          key={level.id}
+                          className="flex items-start gap-3 p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
+                          onClick={() => {
+                            setSelectedAccessLevel(level);
+                            setAccessLevelConfigModalOpen(true);
+                          }}
+                        >
+                          <div
+                            className="h-4 w-4 rounded-full mt-0.5 shrink-0"
+                            style={{ backgroundColor: level.color }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{level.name}</p>
+                              {level.is_system && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Lock className="h-3 w-3 mr-1" />
+                                  Sistema
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-0.5">
+                              {level.description || "Sem descrição"}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {enabledCount} de {totalCount} permissões ativas
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Cog className="h-4 w-4" />
+                            </Button>
+                            {!level.is_system && isMaster && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAccessLevelToDelete(level);
+                                  setDeleteAccessLevelModalOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -768,6 +859,37 @@ export default function Configuracoes() {
         users={eligibleUsersForMaster}
         onConfirm={handleTransferMaster}
         isLoading={isTransferring}
+      />
+
+      <AccessLevelConfigModal
+        open={accessLevelConfigModalOpen}
+        onOpenChange={setAccessLevelConfigModalOpen}
+        accessLevel={selectedAccessLevel}
+        onUpdatePermission={updatePermission}
+        onUpdateAccessLevel={updateAccessLevel}
+        isUpdating={isUpdatingAccessLevel}
+      />
+
+      <CreateAccessLevelModal
+        open={createAccessLevelModalOpen}
+        onOpenChange={setCreateAccessLevelModalOpen}
+        onCreate={createAccessLevel}
+        isCreating={isCreatingAccessLevel}
+      />
+
+      <DeleteConfirmModal
+        open={deleteAccessLevelModalOpen}
+        onOpenChange={setDeleteAccessLevelModalOpen}
+        onConfirm={() => {
+          if (accessLevelToDelete) {
+            deleteAccessLevel(accessLevelToDelete.id);
+            setDeleteAccessLevelModalOpen(false);
+            setAccessLevelToDelete(null);
+          }
+        }}
+        title="Excluir Nível de Acesso"
+        description={`Tem certeza que deseja excluir o nível "${accessLevelToDelete?.name}"? Esta ação não poderá ser desfeita.`}
+        isLoading={isDeletingAccessLevel}
       />
     </AppLayoutNew>
   );
