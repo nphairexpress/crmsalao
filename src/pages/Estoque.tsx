@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Loader2, Package, AlertTriangle, Edit, Trash2, Truck, Globe, Phone } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useSuppliers, Supplier, SupplierInput } from "@/hooks/useSuppliers";
@@ -14,6 +14,9 @@ import { SupplierModal } from "@/components/modals/SupplierModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 
 export default function Estoque() {
+  const location = useLocation();
+  const currentTab = location.pathname === "/estoque/fornecedores" ? "fornecedores" : "produtos";
+
   const [searchTerm, setSearchTerm] = useState("");
   const [supplierSearchTerm, setSupplierSearchTerm] = useState("");
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -123,7 +126,9 @@ export default function Estoque() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Estoque</h1>
-          <p className="text-muted-foreground">Gerencie produtos e fornecedores</p>
+          <p className="text-muted-foreground">
+            {currentTab === "produtos" ? "Gerencie os produtos do seu estoque" : "Gerencie seus fornecedores"}
+          </p>
         </div>
 
         {/* Stats */}
@@ -182,20 +187,10 @@ export default function Estoque() {
           </Card>
         </div>
 
-        <Tabs defaultValue="produtos" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="produtos" className="gap-2">
-              <Package className="h-4 w-4" />
-              Produtos
-            </TabsTrigger>
-            <TabsTrigger value="fornecedores" className="gap-2">
-              <Truck className="h-4 w-4" />
-              Fornecedores
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Products Tab */}
-          <TabsContent value="produtos" className="space-y-4">
+        {/* Content based on route */}
+        {currentTab === "produtos" ? (
+          /* Products Content */
+          <div className="space-y-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
@@ -288,10 +283,10 @@ export default function Estoque() {
                 </Table>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Suppliers Tab */}
-          <TabsContent value="fornecedores" className="space-y-4">
+          </div>
+        ) : (
+          /* Suppliers Content */
+          <div className="space-y-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
@@ -387,8 +382,8 @@ export default function Estoque() {
                 </Table>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
       <ProductModal
