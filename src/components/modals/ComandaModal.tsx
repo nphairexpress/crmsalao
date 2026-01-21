@@ -365,27 +365,30 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
       for (const appointment of appointments || []) {
         if (!appointment.service_id || !appointment.services) continue;
 
-        // Find if this service already exists in comanda items
+        // Find if this service already exists in comanda items (check only by service_id to avoid duplicates)
         const existingItem = currentItems?.find(
-          item => item.service_id === appointment.service_id && 
-                  item.professional_id === appointment.professional_id
+          item => item.service_id === appointment.service_id
         );
 
         if (existingItem) {
-          // Update existing item with appointment data
+          // Update existing item with appointment data (price and professional if different)
           const newPrice = appointment.price ?? appointment.services.price ?? 0;
-          if (existingItem.unit_price !== newPrice) {
+          const shouldUpdate = existingItem.unit_price !== newPrice || 
+                               existingItem.professional_id !== appointment.professional_id;
+          
+          if (shouldUpdate) {
             await supabase
               .from("comanda_items")
               .update({
                 unit_price: newPrice,
                 total_price: newPrice * existingItem.quantity,
+                professional_id: appointment.professional_id,
               })
               .eq("id", existingItem.id);
             itemsUpdated++;
           }
         } else {
-          // Add new item from appointment
+          // Add new item from appointment (only if service doesn't exist in comanda yet)
           await supabase
             .from("comanda_items")
             .insert({
