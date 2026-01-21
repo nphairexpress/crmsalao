@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Product, ProductInput } from "@/hooks/useProducts";
 import { Supplier } from "@/hooks/useSuppliers";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 interface ProductModalProps {
   open: boolean;
@@ -37,6 +37,10 @@ const UNIT_OPTIONS = [
   { value: "unidade", label: "Por Unidade" },
   { value: "ml", label: "Por ml (mililitro)" },
   { value: "g", label: "Por g (grama)" },
+  { value: "dosagem", label: "Por dosagem" },
+  { value: "cm", label: "Por centímetro" },
+  { value: "caixa", label: "Por caixa" },
+  { value: "pacote", label: "Por pacote" },
 ];
 
 export function ProductModal({ open, onOpenChange, product, onSubmit, isLoading, suppliers = [] }: ProductModalProps) {
@@ -63,8 +67,8 @@ export function ProductModal({ open, onOpenChange, product, onSubmit, isLoading,
     is_for_consumption: true,
   });
 
-  const isFractional = formData.unit_of_measure !== "unidade";
-  const unitLabel = formData.unit_of_measure === "ml" ? "ml" : formData.unit_of_measure === "g" ? "g" : "un";
+  const isFractional = ["ml", "g", "dosagem"].includes(formData.unit_of_measure || "");
+  const unitLabel = formData.unit_of_measure === "ml" ? "ml" : formData.unit_of_measure === "g" ? "g" : formData.unit_of_measure === "dosagem" ? "dose" : "un";
 
   useEffect(() => {
     if (product) {
@@ -129,12 +133,12 @@ export function ProductModal({ open, onOpenChange, product, onSubmit, isLoading,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4">
           <DialogTitle>{isEditing ? "Editar Produto" : "Novo Produto"}</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 -mr-4 pr-4">
+        <div className="flex-1 overflow-y-auto px-6" style={{ maxHeight: "calc(90vh - 160px)" }}>
           <form id="product-form" onSubmit={handleSubmit} className="space-y-5 pb-4">
             {/* Basic Info */}
             <div className="space-y-4">
@@ -434,9 +438,9 @@ export function ProductModal({ open, onOpenChange, product, onSubmit, isLoading,
               />
             </div>
           </form>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="flex-shrink-0 pt-4 border-t">
+        <DialogFooter className="flex-shrink-0 px-6 py-4 border-t bg-background">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
