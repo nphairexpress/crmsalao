@@ -24,6 +24,7 @@ interface CommissionItem {
   clientName: string;
   serviceValue: number;
   productCost: number;
+  cardFee: number;
   netValue: number;
   commissionPercent: number;
   commissionValue: number;
@@ -75,6 +76,20 @@ export default function Comissoes() {
     });
   }, [comandas, dateStart, dateEnd]);
 
+  // Helper to calculate the proportional card fee for an item
+  const calculateItemCardFee = (comanda: typeof filteredComandas[0], itemTotal: number): number => {
+    const payments = comanda.payments || [];
+    const comandaTotal = comanda.total || 0;
+    if (comandaTotal === 0) return 0;
+
+    // Sum up all card fees from payments
+    const totalCardFees = payments.reduce((sum, p) => sum + (p.fee_amount || 0), 0);
+    if (totalCardFees === 0) return 0;
+
+    // Proportionally distribute the fee based on item's share of total
+    return (itemTotal / comandaTotal) * totalCardFees;
+  };
+
   // Get detailed commission items for selected professional
   const commissionDetails = useMemo(() => {
     if (selectedProfessional === "all") return [];
@@ -102,7 +117,12 @@ export default function Comissoes() {
 
         const serviceValue = item.total_price || 0;
         const productCost = item.product_cost || 0;
-        const netValue = serviceValue - productCost;
+        
+        // Calculate proportional card fee for this item
+        const cardFee = calculateItemCardFee(comanda, serviceValue);
+        
+        // Net value = service value - product cost - card fee
+        const netValue = serviceValue - productCost - cardFee;
         const commissionValue = (netValue * commissionPercent) / 100;
 
         // Use created_at for the date display to show when service was performed
@@ -116,6 +136,7 @@ export default function Comissoes() {
           clientName: comanda.client_id ? clientMap.get(comanda.client_id) || "Cliente" : "Cliente avulso",
           serviceValue,
           productCost,
+          cardFee,
           netValue,
           commissionPercent,
           commissionValue,
@@ -132,6 +153,7 @@ export default function Comissoes() {
   const professionalTotals = useMemo(() => {
     const totalServices = commissionDetails.reduce((sum, item) => sum + item.serviceValue, 0);
     const totalProductCost = commissionDetails.reduce((sum, item) => sum + item.productCost, 0);
+    const totalCardFee = commissionDetails.reduce((sum, item) => sum + item.cardFee, 0);
     const totalNetValue = commissionDetails.reduce((sum, item) => sum + item.netValue, 0);
     const totalCommission = commissionDetails.reduce((sum, item) => sum + item.commissionValue, 0);
     
@@ -139,6 +161,7 @@ export default function Comissoes() {
       baseRateio: totalServices,
       servicos: totalServices,
       productCost: totalProductCost,
+      cardFee: totalCardFee,
       netValue: totalNetValue,
       produtos: 0,
       pacotes: 0,
@@ -159,6 +182,7 @@ export default function Comissoes() {
       professional: typeof professionals[0];
       totalServices: number;
       productCost: number;
+      cardFee: number;
       netValue: number;
       commission: number;
       discounts: number;
@@ -171,6 +195,7 @@ export default function Comissoes() {
         professional: prof,
         totalServices: 0,
         productCost: 0,
+        cardFee: 0,
         netValue: 0,
         commission: 0,
         discounts: 0,
@@ -198,11 +223,17 @@ export default function Comissoes() {
 
         const itemTotal = item.total_price || 0;
         const productCost = item.product_cost || 0;
-        const netValue = itemTotal - productCost;
+        
+        // Calculate proportional card fee for this item
+        const cardFee = calculateItemCardFee(comanda, itemTotal);
+        
+        // Net value = item total - product cost - card fee
+        const netValue = itemTotal - productCost - cardFee;
         const commission = (netValue * commissionPercent) / 100;
 
         profData.totalServices += itemTotal;
         profData.productCost += productCost;
+        profData.cardFee += cardFee;
         profData.netValue += netValue;
         profData.commission += commission;
         profData.totalToPay += commission;
@@ -373,6 +404,7 @@ export default function Comissoes() {
                         <TableHead>Cliente</TableHead>
                         <TableHead className="text-right">Valor</TableHead>
                         <TableHead className="text-right">Custo Prod.</TableHead>
+                        <TableHead className="text-right">Taxa Cartão</TableHead>
                         <TableHead className="text-right">Líquido</TableHead>
                         <TableHead className="text-right">Comissão</TableHead>
                       </TableRow>
@@ -388,6 +420,9 @@ export default function Comissoes() {
                           <TableCell className="text-right text-destructive">
                             {item.productCost > 0 ? `-${formatCurrency(item.productCost)}` : "-"}
                           </TableCell>
+                          <TableCell className="text-right text-destructive">
+                            {item.cardFee > 0 ? `-${formatCurrency(item.cardFee)}` : "-"}
+                          </TableCell>
                           <TableCell className="text-right">{formatCurrency(item.netValue)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -399,7 +434,7 @@ export default function Comissoes() {
                       ))}
                       {commissionDetails.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                             Nenhum serviço encontrado no período
                           </TableCell>
                         </TableRow>
@@ -440,6 +475,19 @@ export default function Comissoes() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Produtos consumidos nos serviços realizados
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Card Fee Deduction */}
+                  {professionalTotals.cardFee > 0 && (
+                    <div className="pb-3 border-b">
+                      <div className="flex justify-between font-medium mb-2 text-destructive">
+                        <span>(-) Taxa de Cartão:</span>
+                        <span>-{formatCurrency(professionalTotals.cardFee)}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Taxa proporcional das bandeiras de cartão
                       </p>
                     </div>
                   )}

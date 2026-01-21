@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+export interface ComandaPayment {
+  id: string;
+  payment_method: string;
+  amount: number;
+  fee_amount: number | null;
+  net_amount: number | null;
+  card_brand_id: string | null;
+}
+
 export interface Comanda {
   id: string;
   salon_id: string;
@@ -26,6 +35,7 @@ export interface Comanda {
     name: string;
   };
   items?: ComandaItem[];
+  payments?: ComandaPayment[];
 }
 
 export interface ComandaItem {
@@ -93,7 +103,16 @@ export function useComandas() {
             service_id,
             product_id,
             professional_id,
+            product_cost,
             professional:professionals(id, name)
+          ),
+          payments(
+            id,
+            payment_method,
+            amount,
+            fee_amount,
+            net_amount,
+            card_brand_id
           )
         `)
         .eq("salon_id", salonId)
