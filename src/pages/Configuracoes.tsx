@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -27,18 +30,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog } from "lucide-react";
+import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog, UserCog, Save } from "lucide-react";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useUserAccess, UserWithAccess } from "@/hooks/useUserAccess";
 import { useCardBrands, CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
 import { useBankAccounts, BankAccount, BankAccountInput } from "@/hooks/useBankAccounts";
 import { useAccessLevels, AccessLevelWithPermissions } from "@/hooks/useAccessLevels";
+import { useProfessionals } from "@/hooks/useProfessionals";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { CardBrandModal } from "@/components/modals/CardBrandModal";
 import { BankAccountModal } from "@/components/modals/BankAccountModal";
 import { TransferMasterModal } from "@/components/modals/TransferMasterModal";
 import { AccessLevelConfigModal } from "@/components/settings/AccessLevelConfigModal";
 import { CreateAccessLevelModal } from "@/components/settings/CreateAccessLevelModal";
+import { AvatarUpload } from "@/components/shared/AvatarUpload";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
