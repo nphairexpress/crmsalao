@@ -61,12 +61,6 @@ const navItems: NavItem[] = [
     title: "Configurações", 
     url: "/configuracoes", 
     icon: Settings,
-    subItems: [
-      { title: "Agendamento", url: "/configuracoes" },
-      { title: "Serviços", url: "/servicos" },
-      { title: "Profissionais", url: "/profissionais" },
-      { title: "Salão", url: "/configuracoes/salao" },
-    ]
   },
 ];
 

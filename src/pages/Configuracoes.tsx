@@ -31,7 +31,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2, CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog, UserCog, Save, Calendar, Clock, ToggleLeft } from "lucide-react";
+import {
+  Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2,
+  CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog, UserCog,
+  Save, Calendar, Clock, ToggleLeft, ChevronRight, Home, DollarSign, Percent, Package
+} from "lucide-react";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useUserAccess, UserWithAccess } from "@/hooks/useUserAccess";
 import { useCardBrands, CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
@@ -62,12 +66,12 @@ const SPECIALTIES = [
   { value: "outro", label: "Outro" },
 ];
 
+// ===== MASTER PROFESSIONAL PROFILE COMPONENT =====
 function MasterProfessionalProfile() {
   const { user, salonId } = useAuth();
   const { professionals, createProfessional, updateProfessional, isCreating, isUpdating } = useProfessionals();
   const { toast } = useToast();
 
-  // Find if master user already has a professional record linked
   const masterProfessional = professionals.find(
     (p) => p.user_id === user?.id || p.email === user?.email
   );
@@ -139,7 +143,7 @@ function MasterProfessionalProfile() {
           <CardTitle className="text-lg">Meu Perfil Profissional</CardTitle>
         </div>
         <CardDescription>
-          Configure seus dados como profissional do salão. Isso permite que você apareça na agenda, receba agendamentos e comissões.
+          Configure seus dados como profissional do salão.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -147,8 +151,8 @@ function MasterProfessionalProfile() {
           <div className="text-center py-6 space-y-4">
             <UserCog className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
             <div>
-              <p className="text-muted-foreground">Você ainda não está cadastrado como profissional do salão.</p>
-              <p className="text-sm text-muted-foreground">Cadastre-se para aparecer na agenda e receber agendamentos.</p>
+              <p className="text-muted-foreground">Você ainda não está cadastrado como profissional.</p>
+              <p className="text-sm text-muted-foreground">Cadastre-se para aparecer na agenda.</p>
             </div>
             <Button onClick={() => {
               setFormData(prev => ({ ...prev, name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "" }));
@@ -160,7 +164,6 @@ function MasterProfessionalProfile() {
           </div>
         ) : showForm ? (
           <div className="space-y-6">
-            {/* Avatar */}
             <div className="flex justify-center">
               <AvatarUpload
                 currentAvatarUrl={formData.avatar_url}
@@ -170,108 +173,55 @@ function MasterProfessionalProfile() {
                 size="lg"
               />
             </div>
-
-            {/* Row 1: Nome e Apelido */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nome Completo <span className="text-destructive">*</span></Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
+                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
               </div>
               <div className="space-y-2">
                 <Label>Apelido</Label>
-                <Input
-                  value={formData.nickname}
-                  onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                />
+                <Input value={formData.nickname} onChange={(e) => setFormData({ ...formData, nickname: e.target.value })} />
               </div>
             </div>
-
-            {/* Row 2: CPF e Especialidade */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>CPF</Label>
-                <Input
-                  value={formData.cpf}
-                  onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-                  placeholder="000.000.000-00"
-                />
+                <Input value={formData.cpf} onChange={(e) => setFormData({ ...formData, cpf: e.target.value })} placeholder="000.000.000-00" />
               </div>
               <div className="space-y-2">
                 <Label>Especialidade <span className="text-destructive">*</span></Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => setFormData({ ...formData, role: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     {SPECIALTIES.map((spec) => (
-                      <SelectItem key={spec.value} value={spec.value}>
-                        {spec.label}
-                      </SelectItem>
+                      <SelectItem key={spec.value} value={spec.value}>{spec.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
-            {/* Row 3: Telefone e Comissão */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Telefone</Label>
-                <Input
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
+                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>Comissão Padrão (%)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.commission_percent}
-                  onChange={(e) => setFormData({ ...formData, commission_percent: Number(e.target.value) })}
-                />
+                <Input type="number" min="0" max="100" value={formData.commission_percent} onChange={(e) => setFormData({ ...formData, commission_percent: Number(e.target.value) })} />
               </div>
             </div>
-
-            {/* Checkboxes */}
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="master_has_schedule"
-                  checked={formData.has_schedule}
-                  onCheckedChange={(checked) => setFormData({ ...formData, has_schedule: checked as boolean })}
-                />
-                <Label htmlFor="master_has_schedule" className="cursor-pointer">
-                  Possuo agenda (aparecer na agenda do salão)
-                </Label>
+                <Checkbox id="master_has_schedule" checked={formData.has_schedule} onCheckedChange={(checked) => setFormData({ ...formData, has_schedule: checked as boolean })} />
+                <Label htmlFor="master_has_schedule" className="cursor-pointer">Possuo agenda</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="master_can_be_assistant"
-                  checked={formData.can_be_assistant}
-                  onCheckedChange={(checked) => setFormData({ ...formData, can_be_assistant: checked as boolean })}
-                />
-                <Label htmlFor="master_can_be_assistant" className="cursor-pointer">
-                  Posso ser assistente
-                </Label>
+                <Checkbox id="master_can_be_assistant" checked={formData.can_be_assistant} onCheckedChange={(checked) => setFormData({ ...formData, can_be_assistant: checked as boolean })} />
+                <Label htmlFor="master_can_be_assistant" className="cursor-pointer">Posso ser assistente</Label>
               </div>
             </div>
-
-            {/* Actions */}
             <div className="flex gap-3 justify-end">
-              {masterProfessional && (
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                  Cancelar
-                </Button>
-              )}
+              {masterProfessional && <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>}
               <Button onClick={handleSave} disabled={isCreating || isUpdating} className="gap-2">
                 <Save className="h-4 w-4" />
                 {isCreating || isUpdating ? "Salvando..." : "Salvar"}
@@ -279,7 +229,6 @@ function MasterProfessionalProfile() {
             </div>
           </div>
         ) : (
-          /* Display mode */
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
@@ -289,24 +238,17 @@ function MasterProfessionalProfile() {
               </Avatar>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold">{masterProfessional.name}</h3>
-                {masterProfessional.nickname && (
-                  <p className="text-sm text-muted-foreground">"{masterProfessional.nickname}"</p>
-                )}
+                {masterProfessional.nickname && <p className="text-sm text-muted-foreground">"{masterProfessional.nickname}"</p>}
                 <div className="flex items-center gap-2 mt-1">
                   {masterProfessional.role && (
-                    <Badge variant="secondary">
-                      {SPECIALTIES.find(s => s.value === masterProfessional.role)?.label || masterProfessional.role}
-                    </Badge>
+                    <Badge variant="secondary">{SPECIALTIES.find(s => s.value === masterProfessional.role)?.label || masterProfessional.role}</Badge>
                   )}
-                  <Badge variant={masterProfessional.has_schedule ? "default" : "outline"}>
-                    {masterProfessional.has_schedule ? "Com agenda" : "Sem agenda"}
-                  </Badge>
+                  <Badge variant={masterProfessional.has_schedule ? "default" : "outline"}>{masterProfessional.has_schedule ? "Com agenda" : "Sem agenda"}</Badge>
                   <Badge variant="outline">{masterProfessional.commission_percent || 0}% comissão</Badge>
                 </div>
               </div>
               <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
-                <Pencil className="h-4 w-4" />
-                Editar
+                <Pencil className="h-4 w-4" /><span className="hidden sm:inline">Editar</span>
               </Button>
             </div>
           </div>
@@ -324,457 +266,507 @@ const ROLE_LABELS: Record<AppRole, { label: string; description: string; color: 
   professional: { label: "Profissional", description: "Visualiza agenda pessoal e comandas", color: "bg-purple-500" },
 };
 
+// ===== SETTINGS HUB CARD =====
+interface SettingsCardProps {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  onClick: () => void;
+}
+
+function SettingsCard({ icon: Icon, title, description, onClick }: SettingsCardProps) {
+  return (
+    <Card
+      className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200 group"
+      onClick={onClick}
+    >
+      <CardContent className="p-5">
+        <div className="flex items-start gap-3">
+          <Icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">{title}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 mt-0.5" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ===== BREADCRUMB =====
+function SettingsBreadcrumb({ label }: { label: string }) {
+  const navigate = useNavigate();
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+      <button onClick={() => navigate("/configuracoes")} className="hover:text-primary transition-colors">
+        Configurações
+      </button>
+      <ChevronRight className="h-3 w-3" />
+      <span className="text-foreground font-medium">{label}</span>
+    </div>
+  );
+}
+
+// ===== MAIN COMPONENT =====
 export default function Configuracoes() {
   const { isMaster, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isSalaoRoute = location.pathname.startsWith("/configuracoes/salao");
-  const { users, isLoading, updateRole, updateCanOpenCaixa, deleteAccess, isUpdating, isDeleting } = useUserAccess();
-  const { 
-    cardBrands, 
-    isLoading: isLoadingBrands, 
-    createCardBrand, 
-    updateCardBrand, 
-    deleteCardBrand,
-    isCreating: isCreatingBrand,
-    isUpdating: isUpdatingBrand,
-    isDeleting: isDeletingBrand 
-  } = useCardBrands();
-  const {
-    bankAccounts,
-    isLoading: isLoadingBankAccounts,
-    createBankAccount,
-    updateBankAccount,
-    deleteBankAccount,
-  } = useBankAccounts();
-  const {
-    accessLevels,
-    isLoading: isLoadingAccessLevels,
-    createAccessLevel,
-    updateAccessLevel,
-    updatePermission,
-    deleteAccessLevel,
-    isCreating: isCreatingAccessLevel,
-    isUpdating: isUpdatingAccessLevel,
-    isDeleting: isDeletingAccessLevel,
-  } = useAccessLevels();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
+  // Determine which sub-page to show
+  const subPage = (() => {
+    const path = location.pathname;
+    if (path === "/configuracoes") return "hub";
+    if (path.startsWith("/configuracoes/estabelecimento")) return "estabelecimento";
+    if (path.startsWith("/configuracoes/agendamento")) return "agendamento";
+    if (path.startsWith("/configuracoes/financeiro")) return "financeiro";
+    if (path.startsWith("/configuracoes/acessos")) return "acessos";
+    if (path.startsWith("/configuracoes/profissionais")) return "profissionais";
+    if (path.startsWith("/configuracoes/sistema")) return "sistema";
+    // Legacy routes
+    if (path.startsWith("/configuracoes/salao")) return "hub";
+    return "hub";
+  })();
+
+  // Hooks
+  const { users, isLoading, updateRole, updateCanOpenCaixa, deleteAccess, isUpdating, isDeleting } = useUserAccess();
+  const { cardBrands, isLoading: isLoadingBrands, createCardBrand, updateCardBrand, deleteCardBrand, isCreating: isCreatingBrand, isUpdating: isUpdatingBrand, isDeleting: isDeletingBrand } = useCardBrands();
+  const { bankAccounts, isLoading: isLoadingBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount } = useBankAccounts();
+  const { accessLevels, isLoading: isLoadingAccessLevels, createAccessLevel, updateAccessLevel, updatePermission, deleteAccessLevel, isCreating: isCreatingAccessLevel, isUpdating: isUpdatingAccessLevel, isDeleting: isDeletingAccessLevel } = useAccessLevels();
+
+  // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithAccess | null>(null);
-  
-  // Card brand states
   const [cardBrandModalOpen, setCardBrandModalOpen] = useState(false);
   const [selectedCardBrand, setSelectedCardBrand] = useState<CardBrand | null>(null);
   const [deleteCardBrandModalOpen, setDeleteCardBrandModalOpen] = useState(false);
   const [cardBrandToDelete, setCardBrandToDelete] = useState<CardBrand | null>(null);
-
-  // Bank account states
   const [bankAccountModalOpen, setBankAccountModalOpen] = useState(false);
   const [selectedBankAccount, setSelectedBankAccount] = useState<BankAccount | null>(null);
   const [deleteBankAccountModalOpen, setDeleteBankAccountModalOpen] = useState(false);
   const [bankAccountToDelete, setBankAccountToDelete] = useState<BankAccount | null>(null);
-
-  // Master transfer states
   const [transferMasterModalOpen, setTransferMasterModalOpen] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
-
-  // Access level states
   const [accessLevelConfigModalOpen, setAccessLevelConfigModalOpen] = useState(false);
   const [selectedAccessLevel, setSelectedAccessLevel] = useState<AccessLevelWithPermissions | null>(null);
   const [createAccessLevelModalOpen, setCreateAccessLevelModalOpen] = useState(false);
   const [deleteAccessLevelModalOpen, setDeleteAccessLevelModalOpen] = useState(false);
   const [accessLevelToDelete, setAccessLevelToDelete] = useState<AccessLevelWithPermissions | null>(null);
 
+  // Handlers
   const handleRoleChange = (userId: string, newRole: AppRole) => {
-    if (!isMaster) {
-      toast({
-        title: "Acesso negado",
-        description: "Apenas o usuário master pode alterar permissões.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!isMaster) { toast({ title: "Acesso negado", description: "Apenas o usuário master pode alterar permissões.", variant: "destructive" }); return; }
     updateRole({ userId, newRole });
   };
 
   const handleToggleCanOpenCaixa = (userId: string, currentValue: boolean) => {
-    if (!isMaster) {
-      toast({
-        title: "Acesso negado",
-        description: "Apenas o usuário master pode alterar permissões.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!isMaster) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
     updateCanOpenCaixa({ userId, canOpenCaixa: !currentValue });
   };
 
   const handleDeleteAccess = (userAccess: UserWithAccess) => {
-    if (!isMaster) {
-      toast({
-        title: "Acesso negado",
-        description: "Apenas o usuário master pode remover acessos.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!isMaster) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
     setSelectedUser(userAccess);
     setDeleteModalOpen(true);
   };
 
   const confirmDelete = () => {
-    if (selectedUser) {
-      deleteAccess(selectedUser.user_id);
-      setDeleteModalOpen(false);
-      setSelectedUser(null);
-    }
-  };
-
-  // Card brand handlers
-  const handleCreateCardBrand = () => {
-    setSelectedCardBrand(null);
-    setCardBrandModalOpen(true);
-  };
-
-  const handleEditCardBrand = (brand: CardBrand) => {
-    setSelectedCardBrand(brand);
-    setCardBrandModalOpen(true);
+    if (selectedUser) { deleteAccess(selectedUser.user_id); setDeleteModalOpen(false); setSelectedUser(null); }
   };
 
   const handleSaveCardBrand = (data: CardBrandInput) => {
-    if (selectedCardBrand) {
-      updateCardBrand({ id: selectedCardBrand.id, ...data });
-    } else {
-      createCardBrand(data);
-    }
-    setCardBrandModalOpen(false);
-    setSelectedCardBrand(null);
-  };
-
-  const handleDeleteCardBrandClick = (brand: CardBrand) => {
-    setCardBrandToDelete(brand);
-    setDeleteCardBrandModalOpen(true);
-  };
-
-  const confirmDeleteCardBrand = () => {
-    if (cardBrandToDelete) {
-      deleteCardBrand(cardBrandToDelete.id);
-      setDeleteCardBrandModalOpen(false);
-      setCardBrandToDelete(null);
-    }
-  };
-
-  // Bank account handlers
-  const handleCreateBankAccount = () => {
-    setSelectedBankAccount(null);
-    setBankAccountModalOpen(true);
-  };
-
-  const handleEditBankAccount = (account: BankAccount) => {
-    setSelectedBankAccount(account);
-    setBankAccountModalOpen(true);
+    if (selectedCardBrand) { updateCardBrand({ id: selectedCardBrand.id, ...data }); } else { createCardBrand(data); }
+    setCardBrandModalOpen(false); setSelectedCardBrand(null);
   };
 
   const handleSaveBankAccount = (data: BankAccountInput) => {
-    if (selectedBankAccount) {
-      updateBankAccount.mutate({ id: selectedBankAccount.id, ...data });
-    } else {
-      createBankAccount.mutate(data);
-    }
-    setBankAccountModalOpen(false);
-    setSelectedBankAccount(null);
-  };
-
-  const handleDeleteBankAccountClick = (account: BankAccount) => {
-    setBankAccountToDelete(account);
-    setDeleteBankAccountModalOpen(true);
-  };
-
-  const confirmDeleteBankAccount = () => {
-    if (bankAccountToDelete) {
-      deleteBankAccount.mutate(bankAccountToDelete.id);
-      setDeleteBankAccountModalOpen(false);
-      setBankAccountToDelete(null);
-    }
+    if (selectedBankAccount) { updateBankAccount.mutate({ id: selectedBankAccount.id, ...data }); } else { createBankAccount.mutate(data); }
+    setBankAccountModalOpen(false); setSelectedBankAccount(null);
   };
 
   const handleTransferMaster = async (newMasterUserId: string) => {
     setIsTransferring(true);
     try {
-      const { error } = await supabase.functions.invoke("transfer-master-access", {
-        body: { newMasterUserId },
-      });
-
+      const { error } = await supabase.functions.invoke("transfer-master-access", { body: { newMasterUserId } });
       if (error) throw error;
-
-      toast({
-        title: "Acesso master transferido!",
-        description: "Você agora é administrador. Faça login novamente para aplicar as alterações.",
-      });
-
-      // Invalidate queries to refetch master email
+      toast({ title: "Acesso master transferido!", description: "Faça login novamente para aplicar as alterações." });
       queryClient.invalidateQueries({ queryKey: ["master-email"] });
-      
       setTransferMasterModalOpen(false);
-      
-      // Sign out to force refresh
-      setTimeout(async () => {
-        await supabase.auth.signOut();
-        window.location.reload();
-      }, 2000);
+      setTimeout(async () => { await supabase.auth.signOut(); window.location.reload(); }, 2000);
     } catch (error: any) {
-      toast({
-        title: "Erro ao transferir acesso",
-        description: error.message || "Ocorreu um erro inesperado",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTransferring(false);
-    }
+      toast({ title: "Erro ao transferir acesso", description: error.message, variant: "destructive" });
+    } finally { setIsTransferring(false); }
   };
 
-  // Get other users for master transfer (exclude current user and admins)
-  const eligibleUsersForMaster = users.filter(
-    u => u.user_id !== user?.id && u.role !== "admin"
-  );
+  const eligibleUsersForMaster = users.filter(u => u.user_id !== user?.id && u.role !== "admin");
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <AppLayoutNew>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {isSalaoRoute ? "Configurações do Salão" : "Configurações de Agendamento"}
-          </h1>
-          <p className="text-muted-foreground">
-            {isSalaoRoute 
-              ? "Gerencie os dados do salão, usuários, acessos e configurações financeiras." 
-              : "Configure horários, intervalos e preferências da agenda."}
-          </p>
-        </div>
-
-        {!isSalaoRoute ? (
-          /* ===== AGENDAMENTO SETTINGS ===== */
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Horário de Funcionamento</CardTitle>
-                </div>
-                <CardDescription>Defina os horários de abertura e fechamento do salão.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Horário de Abertura</Label>
-                    <Input type="time" defaultValue="08:00" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Horário de Fechamento</Label>
-                    <Input type="time" defaultValue="20:00" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Intervalo de Horários</CardTitle>
-                </div>
-                <CardDescription>Defina o intervalo de tempo entre os horários na agenda.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Intervalo entre horários</Label>
-                    <Select defaultValue="30">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="15">15 minutos</SelectItem>
-                        <SelectItem value="30">30 minutos</SelectItem>
-                        <SelectItem value="45">45 minutos</SelectItem>
-                        <SelectItem value="60">1 hora</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Colunas padrão na agenda</Label>
-                    <Select defaultValue="6">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="3">3 colunas</SelectItem>
-                        <SelectItem value="4">4 colunas</SelectItem>
-                        <SelectItem value="5">5 colunas</SelectItem>
-                        <SelectItem value="6">6 colunas</SelectItem>
-                        <SelectItem value="8">8 colunas</SelectItem>
-                        <SelectItem value="10">10 colunas</SelectItem>
-                        <SelectItem value="12">12 colunas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <ToggleLeft className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Dias de Funcionamento</CardTitle>
-                </div>
-                <CardDescription>Selecione os dias em que o salão funciona.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"].map((day) => (
-                    <div key={day} className="flex items-center space-x-2">
-                      <Checkbox id={day} defaultChecked={day !== "Domingo"} />
-                      <Label htmlFor={day} className="cursor-pointer">{day}</Label>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Regras de Agendamento</CardTitle>
-                </div>
-                <CardDescription>Configure restrições e preferências para os agendamentos.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Antecedência mínima para agendar</Label>
-                    <Select defaultValue="0">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">Sem restrição</SelectItem>
-                        <SelectItem value="1">1 hora antes</SelectItem>
-                        <SelectItem value="2">2 horas antes</SelectItem>
-                        <SelectItem value="24">1 dia antes</SelectItem>
-                        <SelectItem value="48">2 dias antes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Antecedência máxima para agendar</Label>
-                    <Select defaultValue="90">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="7">7 dias</SelectItem>
-                        <SelectItem value="15">15 dias</SelectItem>
-                        <SelectItem value="30">30 dias</SelectItem>
-                        <SelectItem value="60">60 dias</SelectItem>
-                        <SelectItem value="90">90 dias</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="allow_simultaneous" defaultChecked />
-                    <Label htmlFor="allow_simultaneous" className="cursor-pointer">
-                      Permitir agendamentos simultâneos no mesmo horário
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="auto_confirm" />
-                    <Label htmlFor="auto_confirm" className="cursor-pointer">
-                      Confirmar agendamentos automaticamente
-                    </Label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button className="gap-2">
-                <Save className="h-4 w-4" />
-                Salvar Configurações
-              </Button>
+        {/* ===== HUB - GRID OF CARDS ===== */}
+        {subPage === "hub" && (
+          <>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+              <p className="text-muted-foreground">Gerencie as configurações do seu estabelecimento.</p>
             </div>
-          </div>
-        ) : (
-          /* ===== SALÃO SETTINGS (with sub-tabs) ===== */
-          <Tabs defaultValue="dados" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="dados" className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Dados do Salão
-              </TabsTrigger>
-              <TabsTrigger value="usuarios" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Usuários e Acessos
-              </TabsTrigger>
-              <TabsTrigger value="financeiro" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Financeiro
-              </TabsTrigger>
-              <TabsTrigger value="sistema" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Sistema
-              </TabsTrigger>
-            </TabsList>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <SettingsCard
+                icon={Home}
+                title="Informações do Estabelecimento"
+                description="Configure o nome, endereço e contato do seu estabelecimento"
+                onClick={() => navigate("/configuracoes/estabelecimento")}
+              />
+              <SettingsCard
+                icon={Calendar}
+                title="Agendamento"
+                description="Configure as regras de agendamento do seu estabelecimento"
+                onClick={() => navigate("/configuracoes/agendamento")}
+              />
+              <SettingsCard
+                icon={Percent}
+                title="Comissões"
+                description="Defina as regras de comissões do seu estabelecimento"
+                onClick={() => navigate("/financeiro/comissoes")}
+              />
+              <SettingsCard
+                icon={UserCog}
+                title="Profissionais"
+                description="Cadastre e gerencie informações, comissões e regras de acesso dos seus profissionais"
+                onClick={() => navigate("/profissionais")}
+              />
+              <SettingsCard
+                icon={DollarSign}
+                title="Financeiro"
+                description="Configure categorias financeiras, dados bancários e regras de taxas"
+                onClick={() => navigate("/configuracoes/financeiro")}
+              />
+              <SettingsCard
+                icon={Shield}
+                title="Grupos de Acessos"
+                description="Gerencie as regras de acesso dos seus profissionais"
+                onClick={() => navigate("/configuracoes/acessos")}
+              />
+            </div>
+          </>
+        )}
 
-            {/* Dados do Salão */}
-            <TabsContent value="dados" className="space-y-4">
+        {/* ===== INFORMAÇÕES DO ESTABELECIMENTO ===== */}
+        {subPage === "estabelecimento" && (
+          <>
+            <SettingsBreadcrumb label="Informações do Estabelecimento" />
+            <h1 className="text-2xl font-bold tracking-tight">Informações do Estabelecimento</h1>
+            <MasterProfessionalProfile />
+            <Card>
+              <CardHeader>
+                <CardTitle>Dados do Salão</CardTitle>
+                <CardDescription>Informações básicas do estabelecimento.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Em breve: configuração de nome, endereço, logo, CNPJ e dados do salão.</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* ===== AGENDAMENTO ===== */}
+        {subPage === "agendamento" && (
+          <>
+            <SettingsBreadcrumb label="Agendamento" />
+            <h1 className="text-2xl font-bold tracking-tight">Agendamento</h1>
+            <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Dados do Salão</CardTitle>
-                  <CardDescription>Informações básicas do estabelecimento.</CardDescription>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Horário de Funcionamento</CardTitle>
+                  </div>
+                  <CardDescription>Defina os horários de abertura e fechamento do salão.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Em breve: configuração de nome, endereço, logo, CNPJ e dados do salão.</p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Usuários e Acessos */}
-            <TabsContent value="usuarios" className="space-y-4">
-              {/* Master Professional Profile */}
-              <MasterProfessionalProfile />
-
-              {/* Professional management shortcut */}
-              <Card>
-                <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="font-medium">Gerenciamento de Profissionais</p>
-                    <p className="text-sm text-muted-foreground">
-                      Para editar profissionais, especialidades, agenda e comissões por serviço, use a tela de Profissionais.
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Horário de Abertura</Label>
+                      <Input type="time" defaultValue="08:00" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Horário de Fechamento</Label>
+                      <Input type="time" defaultValue="20:00" />
+                    </div>
                   </div>
-                  <Button onClick={() => navigate("/profissionais")} className="gap-2 w-full md:w-auto">
-                    <Users className="h-4 w-4" />
-                    Ir para Profissionais
-                  </Button>
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Intervalo de Horários</CardTitle>
+                  </div>
+                  <CardDescription>Defina o intervalo de tempo entre os horários na agenda.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Intervalo entre horários</Label>
+                      <Select defaultValue="30">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="15">15 minutos</SelectItem>
+                          <SelectItem value="30">30 minutos</SelectItem>
+                          <SelectItem value="45">45 minutos</SelectItem>
+                          <SelectItem value="60">1 hora</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Colunas padrão na agenda</Label>
+                      <Select defaultValue="6">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3">3 colunas</SelectItem>
+                          <SelectItem value="4">4 colunas</SelectItem>
+                          <SelectItem value="5">5 colunas</SelectItem>
+                          <SelectItem value="6">6 colunas</SelectItem>
+                          <SelectItem value="8">8 colunas</SelectItem>
+                          <SelectItem value="10">10 colunas</SelectItem>
+                          <SelectItem value="12">12 colunas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <ToggleLeft className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Dias de Funcionamento</CardTitle>
+                  </div>
+                  <CardDescription>Selecione os dias em que o salão funciona.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"].map((day) => (
+                      <div key={day} className="flex items-center space-x-2">
+                        <Checkbox id={day} defaultChecked={day !== "Domingo"} />
+                        <Label htmlFor={day} className="cursor-pointer">{day}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Regras de Agendamento</CardTitle>
+                  </div>
+                  <CardDescription>Configure restrições e preferências para os agendamentos.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Antecedência mínima para agendar</Label>
+                      <Select defaultValue="0">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Sem restrição</SelectItem>
+                          <SelectItem value="1">1 hora antes</SelectItem>
+                          <SelectItem value="2">2 horas antes</SelectItem>
+                          <SelectItem value="24">1 dia antes</SelectItem>
+                          <SelectItem value="48">2 dias antes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Antecedência máxima para agendar</Label>
+                      <Select defaultValue="90">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">7 dias</SelectItem>
+                          <SelectItem value="15">15 dias</SelectItem>
+                          <SelectItem value="30">30 dias</SelectItem>
+                          <SelectItem value="60">60 dias</SelectItem>
+                          <SelectItem value="90">90 dias</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="allow_simultaneous" defaultChecked />
+                      <Label htmlFor="allow_simultaneous" className="cursor-pointer">Permitir agendamentos simultâneos no mesmo horário</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="auto_confirm" />
+                      <Label htmlFor="auto_confirm" className="cursor-pointer">Confirmar agendamentos automaticamente</Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button className="gap-2"><Save className="h-4 w-4" />Salvar Configurações</Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ===== FINANCEIRO ===== */}
+        {subPage === "financeiro" && (
+          <>
+            <SettingsBreadcrumb label="Financeiro" />
+            <h1 className="text-2xl font-bold tracking-tight">Financeiro</h1>
+            <div className="space-y-4">
+              {/* Card Brands */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Bandeiras de Cartão</CardTitle>
+                      <CardDescription>Cadastre as bandeiras e suas taxas para descontar do valor pago.</CardDescription>
+                    </div>
+                    <Button onClick={() => { setSelectedCardBrand(null); setCardBrandModalOpen(true); }} className="gap-2">
+                      <Plus className="h-4 w-4" />Nova Bandeira
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {isLoadingBrands ? (
+                    <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                  ) : cardBrands.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Nenhuma bandeira cadastrada.</p>
+                      <p className="text-sm">Adicione bandeiras para controlar as taxas.</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Bandeira</TableHead>
+                          <TableHead className="text-center">Taxa Crédito</TableHead>
+                          <TableHead className="text-center">Taxa Débito</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="w-[100px]">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {cardBrands.map((brand) => (
+                          <TableRow key={brand.id}>
+                            <TableCell className="font-medium">{brand.name}</TableCell>
+                            <TableCell className="text-center"><Badge variant="outline">{brand.credit_fee_percent.toFixed(2)}%</Badge></TableCell>
+                            <TableCell className="text-center"><Badge variant="outline">{brand.debit_fee_percent.toFixed(2)}%</Badge></TableCell>
+                            <TableCell className="text-center"><Badge variant={brand.is_active ? "default" : "secondary"}>{brand.is_active ? "Ativa" : "Inativa"}</Badge></TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => { setSelectedCardBrand(brand); setCardBrandModalOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { setCardBrandToDelete(brand); setDeleteCardBrandModalOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <CreditCard className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-amber-900 dark:text-amber-100">Como funcionam as taxas</h4>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                        Ao finalizar uma comanda com pagamento em cartão, o sistema descontará a taxa da bandeira do valor pago. A comissão será calculada sobre o valor líquido.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Bank Accounts */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2"><Landmark className="h-5 w-5" />Contas Bancárias (PIX)</CardTitle>
+                      <CardDescription>Cadastre as contas bancárias para destinar pagamentos via PIX.</CardDescription>
+                    </div>
+                    <Button onClick={() => { setSelectedBankAccount(null); setBankAccountModalOpen(true); }} className="gap-2">
+                      <Plus className="h-4 w-4" />Nova Conta
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {isLoadingBankAccounts ? (
+                    <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                  ) : bankAccounts.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Landmark className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Nenhuma conta bancária cadastrada.</p>
+                      <p className="text-sm">Adicione contas para selecionar o destino dos pagamentos PIX.</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Banco</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="w-[100px]">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {bankAccounts.map((account) => (
+                          <TableRow key={account.id}>
+                            <TableCell className="font-medium">{account.name}</TableCell>
+                            <TableCell className="text-center"><Badge variant={account.is_active ? "default" : "secondary"}>{account.is_active ? "Ativa" : "Inativa"}</Badge></TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => { setSelectedBankAccount(account); setBankAccountModalOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { setBankAccountToDelete(account); setDeleteBankAccountModalOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Landmark className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-green-900 dark:text-green-100">Como funcionam as contas</h4>
+                      <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                        Ao receber um pagamento via PIX, você poderá selecionar para qual conta bancária o valor está sendo destinado.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {/* ===== GRUPOS DE ACESSOS ===== */}
+        {subPage === "acessos" && (
+          <>
+            <SettingsBreadcrumb label="Grupos de Acessos" />
+            <h1 className="text-2xl font-bold tracking-tight">Grupos de Acessos</h1>
+            <div className="space-y-4">
               {/* Info Card */}
               <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
                 <CardContent className="p-4">
@@ -800,19 +792,13 @@ export default function Configuracoes() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Usuários com Acesso ao Sistema</CardTitle>
-                  <CardDescription>
-                    Lista de todos os usuários que podem acessar o sistema.
-                  </CardDescription>
+                  <CardDescription>Lista de todos os usuários que podem acessar o sistema.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
+                    <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                   ) : users.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nenhum usuário cadastrado.
-                    </div>
+                    <div className="text-center py-8 text-muted-foreground">Nenhum usuário cadastrado.</div>
                   ) : (
                     <Table>
                       <TableHeader>
@@ -828,87 +814,56 @@ export default function Configuracoes() {
                           const roleInfo = ROLE_LABELS[userAccess.role];
                           const isCurrentUser = userAccess.user_id === user?.id;
                           const isAdmin = userAccess.role === "admin";
-                          
                           return (
                             <TableRow key={userAccess.id}>
                               <TableCell>
                                 <div className="flex items-center gap-3">
-                                  <Avatar>
-                                    <AvatarFallback className="bg-primary/10 text-primary">
-                                      {getInitials(userAccess.full_name)}
-                                    </AvatarFallback>
-                                  </Avatar>
+                                  <Avatar><AvatarFallback className="bg-primary/10 text-primary">{getInitials(userAccess.full_name)}</AvatarFallback></Avatar>
                                   <div>
                                     <p className="font-medium">
                                       {userAccess.full_name}
-                                      {isCurrentUser && (
-                                        <Badge variant="outline" className="ml-2 text-xs">Você</Badge>
-                                      )}
+                                      {isCurrentUser && <Badge variant="outline" className="ml-2 text-xs">Você</Badge>}
                                     </p>
                                   </div>
                                 </div>
                               </TableCell>
                               <TableCell>
                                 {isMaster && !isAdmin ? (
-                                  <Select
-                                    value={userAccess.role}
-                                    onValueChange={(value) => handleRoleChange(userAccess.user_id, value as AppRole)}
-                                    disabled={isUpdating}
-                                  >
-                                    <SelectTrigger className="w-[180px]">
-                                      <SelectValue />
-                                    </SelectTrigger>
+                                  <Select value={userAccess.role} onValueChange={(value) => handleRoleChange(userAccess.user_id, value as AppRole)} disabled={isUpdating}>
+                                    <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                      {Object.entries(ROLE_LABELS)
-                                        .filter(([key]) => key !== "admin")
-                                        .map(([key, value]) => (
-                                          <SelectItem key={key} value={key}>
-                                            <div className="flex items-center gap-2">
-                                              <div className={`h-2 w-2 rounded-full ${value.color}`} />
-                                              {value.label}
-                                            </div>
-                                          </SelectItem>
-                                        ))}
+                                      {Object.entries(ROLE_LABELS).filter(([key]) => key !== "admin").map(([key, value]) => (
+                                        <SelectItem key={key} value={key}>
+                                          <div className="flex items-center gap-2">
+                                            <div className={`h-2 w-2 rounded-full ${value.color}`} />
+                                            {value.label}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                 ) : (
                                   <div className="flex items-center gap-2">
                                     <div className={`h-2 w-2 rounded-full ${roleInfo.color}`} />
                                     <span>{roleInfo.label}</span>
-                                    {isAdmin && (
-                                      <Badge variant="destructive" className="text-xs">Master</Badge>
-                                    )}
+                                    {isAdmin && <Badge variant="destructive" className="text-xs">Master</Badge>}
                                   </div>
                                 )}
                               </TableCell>
                               <TableCell className="text-center">
                                 {isMaster && !isAdmin ? (
-                                  <Switch
-                                    checked={userAccess.can_open_caixa}
-                                    onCheckedChange={() => handleToggleCanOpenCaixa(userAccess.user_id, userAccess.can_open_caixa)}
-                                    disabled={isUpdating}
-                                  />
+                                  <Switch checked={userAccess.can_open_caixa} onCheckedChange={() => handleToggleCanOpenCaixa(userAccess.user_id, userAccess.can_open_caixa)} disabled={isUpdating} />
                                 ) : (
-                                  <Badge variant={userAccess.can_open_caixa ? "default" : "secondary"}>
-                                    {userAccess.can_open_caixa ? "Sim" : "Não"}
-                                  </Badge>
+                                  <Badge variant={userAccess.can_open_caixa ? "default" : "secondary"}>{userAccess.can_open_caixa ? "Sim" : "Não"}</Badge>
                                 )}
                               </TableCell>
                               <TableCell>
                                 {isMaster && !isAdmin && !isCurrentUser && (
                                   <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
+                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => handleDeleteAccess(userAccess)}
-                                        className="text-destructive"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Remover Acesso
+                                      <DropdownMenuItem onClick={() => handleDeleteAccess(userAccess)} className="text-destructive">
+                                        <Trash2 className="h-4 w-4 mr-2" />Remover Acesso
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -923,84 +878,48 @@ export default function Configuracoes() {
                 </CardContent>
               </Card>
 
-              {/* Access Levels Configuration */}
+              {/* Access Levels */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-lg">Configuração dos Níveis de Acesso</CardTitle>
-                      <CardDescription>
-                        Configure as permissões de cada nível ou crie níveis personalizados.
-                      </CardDescription>
+                      <CardDescription>Configure as permissões de cada nível ou crie níveis personalizados.</CardDescription>
                     </div>
                     {isMaster && (
-                      <Button onClick={() => setCreateAccessLevelModalOpen(true)} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Novo Nível
-                      </Button>
+                      <Button onClick={() => setCreateAccessLevelModalOpen(true)} className="gap-2"><Plus className="h-4 w-4" />Novo Nível</Button>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent>
                   {isLoadingAccessLevels ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
+                    <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                   ) : accessLevels.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nenhum nível de acesso configurado.
-                    </div>
+                    <div className="text-center py-8 text-muted-foreground">Nenhum nível de acesso configurado.</div>
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2">
                       {accessLevels.map((level) => {
                         const enabledCount = Object.values(level.permissions).filter(Boolean).length;
                         const totalCount = Object.keys(level.permissions).length;
-                        
                         return (
                           <div
                             key={level.id}
                             className="flex items-start gap-3 p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
-                            onClick={() => {
-                              setSelectedAccessLevel(level);
-                              setAccessLevelConfigModalOpen(true);
-                            }}
+                            onClick={() => { setSelectedAccessLevel(level); setAccessLevelConfigModalOpen(true); }}
                           >
-                            <div
-                              className="h-4 w-4 rounded-full mt-0.5 shrink-0"
-                              style={{ backgroundColor: level.color }}
-                            />
+                            <div className="h-4 w-4 rounded-full mt-0.5 shrink-0" style={{ backgroundColor: level.color }} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="font-medium">{level.name}</p>
-                                {level.is_system && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    <Lock className="h-3 w-3 mr-1" />
-                                    Sistema
-                                  </Badge>
-                                )}
+                                {level.is_system && <Badge variant="secondary" className="text-xs"><Lock className="h-3 w-3 mr-1" />Sistema</Badge>}
                               </div>
-                              <p className="text-sm text-muted-foreground mt-0.5">
-                                {level.description || "Sem descrição"}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                {enabledCount} de {totalCount} permissões ativas
-                              </p>
+                              <p className="text-sm text-muted-foreground mt-0.5">{level.description || "Sem descrição"}</p>
+                              <p className="text-xs text-muted-foreground mt-2">{enabledCount} de {totalCount} permissões ativas</p>
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Cog className="h-4 w-4" />
-                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8"><Cog className="h-4 w-4" /></Button>
                               {!level.is_system && isMaster && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setAccessLevelToDelete(level);
-                                    setDeleteAccessLevelModalOpen(true);
-                                  }}
-                                >
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setAccessLevelToDelete(level); setDeleteAccessLevelModalOpen(true); }}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               )}
@@ -1012,213 +931,16 @@ export default function Configuracoes() {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            {/* Financeiro */}
-            <TabsContent value="financeiro" className="space-y-4">
-            {/* Card Brands */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Bandeiras de Cartão</CardTitle>
-                    <CardDescription>
-                      Cadastre as bandeiras de cartão e suas taxas para descontar do valor pago antes de calcular comissões.
-                    </CardDescription>
-                  </div>
-                  <Button onClick={handleCreateCardBrand} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nova Bandeira
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {isLoadingBrands ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : cardBrands.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>Nenhuma bandeira cadastrada.</p>
-                    <p className="text-sm">Adicione bandeiras de cartão para controlar as taxas.</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Bandeira</TableHead>
-                        <TableHead className="text-center">Taxa Crédito</TableHead>
-                        <TableHead className="text-center">Taxa Débito</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="w-[100px]">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {cardBrands.map((brand) => (
-                        <TableRow key={brand.id}>
-                          <TableCell className="font-medium">{brand.name}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline">{brand.credit_fee_percent.toFixed(2)}%</Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline">{brand.debit_fee_percent.toFixed(2)}%</Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={brand.is_active ? "default" : "secondary"}>
-                              {brand.is_active ? "Ativa" : "Inativa"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditCardBrand(brand)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteCardBrandClick(brand)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Info about card fees */}
-            <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <CreditCard className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-amber-900 dark:text-amber-100">Como funcionam as taxas</h4>
-                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                      Ao finalizar uma comanda com pagamento em cartão, o sistema descontará a taxa da bandeira 
-                      do valor pago. A comissão do profissional será calculada sobre o valor líquido (após o desconto da taxa).
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bank Accounts */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Landmark className="h-5 w-5" />
-                      Contas Bancárias (PIX)
-                    </CardTitle>
-                    <CardDescription>
-                      Cadastre as contas bancárias para destinar pagamentos via PIX.
-                    </CardDescription>
-                  </div>
-                  <Button onClick={handleCreateBankAccount} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nova Conta
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {isLoadingBankAccounts ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : bankAccounts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Landmark className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>Nenhuma conta bancária cadastrada.</p>
-                    <p className="text-sm">Adicione contas para selecionar o destino dos pagamentos PIX.</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Banco</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="w-[100px]">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {bankAccounts.map((account) => (
-                        <TableRow key={account.id}>
-                          <TableCell className="font-medium">{account.name}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={account.is_active ? "default" : "secondary"}>
-                              {account.is_active ? "Ativa" : "Inativa"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditBankAccount(account)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteBankAccountClick(account)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Info about bank accounts */}
-            <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <Landmark className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-green-900 dark:text-green-100">Como funcionam as contas</h4>
-                    <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                      Ao receber um pagamento via PIX na comanda, você poderá selecionar para qual conta bancária 
-                      o valor está sendo destinado, facilitando o controle financeiro.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            </TabsContent>
-
-            {/* Sistema */}
-            <TabsContent value="sistema" className="space-y-4">
-              {/* Master Transfer Section - Only visible to master user */}
+              {/* Master Transfer */}
               {isMaster && (
                 <Card className="border-red-200 dark:border-red-800">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <ArrowRightLeft className="h-5 w-5 text-red-600 dark:text-red-400" />
-                      <CardTitle className="text-lg text-red-600 dark:text-red-400">
-                        Transferir Acesso Master
-                      </CardTitle>
+                      <CardTitle className="text-lg text-red-600 dark:text-red-400">Transferir Acesso Master</CardTitle>
                     </div>
-                    <CardDescription>
-                      Transfira seu acesso master para outro usuário. Esta ação é irreversível.
-                    </CardDescription>
+                    <CardDescription>Transfira seu acesso master para outro usuário. Esta ação é irreversível.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -1233,118 +955,32 @@ export default function Configuracoes() {
                           <li>Transferir acesso master novamente</li>
                         </ul>
                       </div>
-                      
                       {eligibleUsersForMaster.length > 0 ? (
-                        <Button
-                          variant="destructive"
-                          onClick={() => setTransferMasterModalOpen(true)}
-                          className="gap-2"
-                        >
-                          <ArrowRightLeft className="h-4 w-4" />
-                          Transferir Acesso Master
+                        <Button variant="destructive" onClick={() => setTransferMasterModalOpen(true)} className="gap-2">
+                          <ArrowRightLeft className="h-4 w-4" />Transferir Acesso Master
                         </Button>
                       ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Não há outros usuários disponíveis para receber o acesso master. 
-                          Cadastre novos profissionais com acesso ao sistema primeiro.
-                        </p>
+                        <p className="text-sm text-muted-foreground">Não há outros usuários disponíveis para receber o acesso master.</p>
                       )}
                     </div>
                   </CardContent>
                 </Card>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          </>
         )}
       </div>
 
-      <DeleteConfirmModal
-        open={deleteModalOpen}
-        onOpenChange={setDeleteModalOpen}
-        onConfirm={confirmDelete}
-        title="Remover Acesso"
-        description={`Tem certeza que deseja remover o acesso de "${selectedUser?.full_name}"? Esta ação irá desativar o login do usuário no sistema.`}
-        isLoading={isDeleting}
-      />
-
-      <DeleteConfirmModal
-        open={deleteCardBrandModalOpen}
-        onOpenChange={setDeleteCardBrandModalOpen}
-        onConfirm={confirmDeleteCardBrand}
-        title="Excluir Bandeira"
-        description={`Tem certeza que deseja excluir a bandeira "${cardBrandToDelete?.name}"? Esta ação não poderá ser desfeita.`}
-        isLoading={isDeletingBrand}
-      />
-
-      <CardBrandModal
-        open={cardBrandModalOpen}
-        onClose={() => {
-          setCardBrandModalOpen(false);
-          setSelectedCardBrand(null);
-        }}
-        onSave={handleSaveCardBrand}
-        cardBrand={selectedCardBrand}
-        isLoading={isCreatingBrand || isUpdatingBrand}
-      />
-
-      <BankAccountModal
-        isOpen={bankAccountModalOpen}
-        onClose={() => {
-          setBankAccountModalOpen(false);
-          setSelectedBankAccount(null);
-        }}
-        onSave={handleSaveBankAccount}
-        bankAccount={selectedBankAccount}
-        isLoading={createBankAccount.isPending || updateBankAccount.isPending}
-      />
-
-      <DeleteConfirmModal
-        open={deleteBankAccountModalOpen}
-        onOpenChange={setDeleteBankAccountModalOpen}
-        onConfirm={confirmDeleteBankAccount}
-        title="Excluir Conta Bancária"
-        description={`Tem certeza que deseja excluir a conta "${bankAccountToDelete?.name}"? Esta ação não poderá ser desfeita.`}
-        isLoading={deleteBankAccount.isPending}
-      />
-
-      <TransferMasterModal
-        open={transferMasterModalOpen}
-        onOpenChange={setTransferMasterModalOpen}
-        users={eligibleUsersForMaster}
-        onConfirm={handleTransferMaster}
-        isLoading={isTransferring}
-      />
-
-      <AccessLevelConfigModal
-        open={accessLevelConfigModalOpen}
-        onOpenChange={setAccessLevelConfigModalOpen}
-        accessLevel={selectedAccessLevel}
-        onUpdatePermission={updatePermission}
-        onUpdateAccessLevel={updateAccessLevel}
-        isUpdating={isUpdatingAccessLevel}
-      />
-
-      <CreateAccessLevelModal
-        open={createAccessLevelModalOpen}
-        onOpenChange={setCreateAccessLevelModalOpen}
-        onCreate={createAccessLevel}
-        isCreating={isCreatingAccessLevel}
-      />
-
-      <DeleteConfirmModal
-        open={deleteAccessLevelModalOpen}
-        onOpenChange={setDeleteAccessLevelModalOpen}
-        onConfirm={() => {
-          if (accessLevelToDelete) {
-            deleteAccessLevel(accessLevelToDelete.id);
-            setDeleteAccessLevelModalOpen(false);
-            setAccessLevelToDelete(null);
-          }
-        }}
-        title="Excluir Nível de Acesso"
-        description={`Tem certeza que deseja excluir o nível "${accessLevelToDelete?.name}"? Esta ação não poderá ser desfeita.`}
-        isLoading={isDeletingAccessLevel}
-      />
+      {/* Modals */}
+      <DeleteConfirmModal open={deleteModalOpen} onOpenChange={setDeleteModalOpen} onConfirm={confirmDelete} title="Remover Acesso" description={`Tem certeza que deseja remover o acesso de "${selectedUser?.full_name}"?`} isLoading={isDeleting} />
+      <DeleteConfirmModal open={deleteCardBrandModalOpen} onOpenChange={setDeleteCardBrandModalOpen} onConfirm={() => { if (cardBrandToDelete) { deleteCardBrand(cardBrandToDelete.id); setDeleteCardBrandModalOpen(false); setCardBrandToDelete(null); } }} title="Excluir Bandeira" description={`Excluir a bandeira "${cardBrandToDelete?.name}"?`} isLoading={isDeletingBrand} />
+      <CardBrandModal open={cardBrandModalOpen} onClose={() => { setCardBrandModalOpen(false); setSelectedCardBrand(null); }} onSave={handleSaveCardBrand} cardBrand={selectedCardBrand} isLoading={isCreatingBrand || isUpdatingBrand} />
+      <BankAccountModal isOpen={bankAccountModalOpen} onClose={() => { setBankAccountModalOpen(false); setSelectedBankAccount(null); }} onSave={handleSaveBankAccount} bankAccount={selectedBankAccount} isLoading={createBankAccount.isPending || updateBankAccount.isPending} />
+      <DeleteConfirmModal open={deleteBankAccountModalOpen} onOpenChange={setDeleteBankAccountModalOpen} onConfirm={() => { if (bankAccountToDelete) { deleteBankAccount.mutate(bankAccountToDelete.id); setDeleteBankAccountModalOpen(false); setBankAccountToDelete(null); } }} title="Excluir Conta" description={`Excluir a conta "${bankAccountToDelete?.name}"?`} isLoading={deleteBankAccount.isPending} />
+      <TransferMasterModal open={transferMasterModalOpen} onOpenChange={setTransferMasterModalOpen} users={eligibleUsersForMaster} onConfirm={handleTransferMaster} isLoading={isTransferring} />
+      <AccessLevelConfigModal open={accessLevelConfigModalOpen} onOpenChange={setAccessLevelConfigModalOpen} accessLevel={selectedAccessLevel} onUpdatePermission={updatePermission} onUpdateAccessLevel={updateAccessLevel} isUpdating={isUpdatingAccessLevel} />
+      <CreateAccessLevelModal open={createAccessLevelModalOpen} onOpenChange={setCreateAccessLevelModalOpen} onCreate={createAccessLevel} isCreating={isCreatingAccessLevel} />
+      <DeleteConfirmModal open={deleteAccessLevelModalOpen} onOpenChange={setDeleteAccessLevelModalOpen} onConfirm={() => { if (accessLevelToDelete) { deleteAccessLevel(accessLevelToDelete.id); setDeleteAccessLevelModalOpen(false); setAccessLevelToDelete(null); } }} title="Excluir Nível" description={`Excluir o nível "${accessLevelToDelete?.name}"?`} isLoading={isDeletingAccessLevel} />
     </AppLayoutNew>
   );
 }
