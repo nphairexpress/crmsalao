@@ -36,6 +36,7 @@ import {
   CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog, UserCog,
   Save, Calendar, Clock, ToggleLeft, ChevronRight, Home, DollarSign, Percent, Package
 } from "lucide-react";
+import { CommissionSettingsPage } from "@/components/settings/CommissionSettingsPage";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useUserAccess, UserWithAccess } from "@/hooks/useUserAccess";
 import { useCardBrands, CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
