@@ -327,6 +327,8 @@ const ROLE_LABELS: Record<AppRole, { label: string; description: string; color: 
 export default function Configuracoes() {
   const { isMaster, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isSalaoRoute = location.pathname.startsWith("/configuracoes/salao");
   const { users, isLoading, updateRole, updateCanOpenCaixa, deleteAccess, isUpdating, isDeleting } = useUserAccess();
   const { 
     cardBrands, 
