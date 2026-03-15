@@ -1001,21 +1001,17 @@ export default function Configuracoes() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="salao">
+          <TabsContent value="sistema" className="space-y-4">
+            {/* Salon Data */}
             <Card>
               <CardHeader>
                 <CardTitle>Dados do Salão</CardTitle>
                 <CardDescription>Informações básicas do estabelecimento.</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Em breve: configuração de nome, endereço, logo e dados do salão.</p>
+                <p className="text-muted-foreground">Em breve: configuração de nome, endereço, logo, CNPJ e dados do salão.</p>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="sistema" className="space-y-4">
-            {/* Master Professional Profile */}
-            <MasterProfessionalProfile />
 
             {/* Master Transfer Section - Only visible to master user */}
             {isMaster && (
