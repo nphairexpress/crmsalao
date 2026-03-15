@@ -43,6 +43,7 @@ export default function ClientAlerts() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<AlertForm>(emptyForm);
+  const { clients } = useClients();
 
   const { data: alerts, isLoading } = useQuery({
     queryKey: ["client-alerts", salonId],
