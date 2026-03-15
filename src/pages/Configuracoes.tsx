@@ -748,15 +748,8 @@ export default function Configuracoes() {
           </TabsContent>
 
           <TabsContent value="sistema" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações do Sistema</CardTitle>
-                <CardDescription>Preferências gerais do sistema.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Em breve: configurações de notificações, horários, integrações.</p>
-              </CardContent>
-            </Card>
+            {/* Master Professional Profile */}
+            <MasterProfessionalProfile />
 
             {/* Master Transfer Section - Only visible to master user */}
             {isMaster && (
