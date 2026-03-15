@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { ClientSearchSelect } from "@/components/shared/ClientSearchSelect";
+import { useClients } from "@/hooks/useClients";
 
 interface AlertForm {
   title: string;
