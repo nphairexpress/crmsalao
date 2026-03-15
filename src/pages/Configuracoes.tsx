@@ -36,6 +36,7 @@ import {
   CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog, UserCog,
   Save, Calendar, Clock, ToggleLeft, ChevronRight, Home, DollarSign, Percent, Package
 } from "lucide-react";
+import { CommissionSettingsPage } from "@/components/settings/CommissionSettingsPage";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useUserAccess, UserWithAccess } from "@/hooks/useUserAccess";
 import { useCardBrands, CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
@@ -322,11 +323,11 @@ export default function Configuracoes() {
     if (path === "/configuracoes") return "hub";
     if (path.startsWith("/configuracoes/estabelecimento")) return "estabelecimento";
     if (path.startsWith("/configuracoes/agendamento")) return "agendamento";
+    if (path.startsWith("/configuracoes/comissoes")) return "comissoes";
     if (path.startsWith("/configuracoes/financeiro")) return "financeiro";
     if (path.startsWith("/configuracoes/acessos")) return "acessos";
     if (path.startsWith("/configuracoes/profissionais")) return "profissionais";
     if (path.startsWith("/configuracoes/sistema")) return "sistema";
-    // Legacy routes
     if (path.startsWith("/configuracoes/salao")) return "hub";
     return "hub";
   })();
@@ -432,7 +433,7 @@ export default function Configuracoes() {
                 icon={Percent}
                 title="Comissões"
                 description="Defina as regras de comissões do seu estabelecimento"
-                onClick={() => navigate("/financeiro/comissoes")}
+                onClick={() => navigate("/configuracoes/comissoes")}
               />
               <SettingsCard
                 icon={UserCog}
@@ -617,6 +618,14 @@ export default function Configuracoes() {
                 <Button className="gap-2"><Save className="h-4 w-4" />Salvar Configurações</Button>
               </div>
             </div>
+          </>
+        )}
+
+        {/* ===== COMISSÕES ===== */}
+        {subPage === "comissoes" && (
+          <>
+            <SettingsBreadcrumb label="Comissões" />
+            <CommissionSettingsPage />
           </>
         )}
 
