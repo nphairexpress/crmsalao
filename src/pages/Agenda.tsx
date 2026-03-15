@@ -3,7 +3,7 @@ import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronLeft, ChevronRight, Plus, Clock, Search, Loader2, Ban } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, Search, Loader2, Ban, List, Maximize2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,33 +24,30 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 
 const timeSlots = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", 
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
   "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
   "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
   "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
 ];
 
 const statusColors: Record<string, string> = {
-  scheduled: "bg-[#4a7c59] text-white",       // Verde escuro - Agendado
-  confirmed: "bg-[#3b82c4] text-white",       // Azul - Confirmado
-  in_progress: "bg-[#16a34a] text-white",     // Verde vivo - Em Atendimento
-  completed: "bg-[#3b5998] text-white",       // Azul escuro - Finalizado
-  paid: "bg-[#dc2626] text-white",            // Vermelho - Pago
-  awaiting: "bg-[#d4a127] text-white",        // Amarelo/Dourado - Aguardando
-  no_show: "bg-[#9ca3af] text-white",         // Cinza claro - Faltou
-  cancelled: "bg-[#6b7280] text-white",       // Cinza - Cancelado
-  blocked: "bg-slate-700 text-white",
+  scheduled: "bg-[#e74c3c]",      // Vermelho - Agendado (como AVEC)
+  confirmed: "bg-[#2ecc71]",      // Verde - Confirmado
+  in_progress: "bg-[#16a085]",    // Teal - Em Atendimento (como AVEC)
+  completed: "bg-[#3b5998]",      // Azul escuro - Finalizado
+  paid: "bg-[#9b59b6]",           // Roxo - Pago
+  awaiting: "bg-[#f39c12]",       // Amarelo - Aguardando
+  no_show: "bg-[#95a5a6]",        // Cinza - Faltou
+  cancelled: "bg-[#7f8c8d]",      // Cinza escuro - Cancelado
+  blocked: "bg-[#34495e]",
 };
 
-const professionalColors = [
-  "bg-red-500", "bg-blue-500", "bg-purple-500", "bg-emerald-500", 
-  "bg-pink-500", "bg-amber-500", "bg-cyan-500", "bg-indigo-500",
-  "bg-rose-500", "bg-teal-500", "bg-orange-500", "bg-violet-500"
-];
+const columnOptions = [3, 5, 8, 10, 12];
 
 export default function Agenda() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [searchProfessional, setSearchProfessional] = useState("");
+  const [searchAppointment, setSearchAppointment] = useState("");
   const [selectedProfessionalIds, setSelectedProfessionalIds] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
@@ -59,6 +56,8 @@ export default function Agenda() {
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [pendingClientName, setPendingClientName] = useState("");
   const [isBlocking, setIsBlocking] = useState(false);
+  const [maxColumns, setMaxColumns] = useState(10);
+  const [expandCategories, setExpandCategories] = useState(false);
 
   const { toast } = useToast();
   const { salonId } = useAuth();
@@ -79,11 +78,11 @@ export default function Agenda() {
   };
 
   const goToPreviousMonth = () => {
-    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, prev.getDate()));
   };
 
   const goToNextMonth = () => {
-    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, prev.getDate()));
   };
 
   const goToToday = () => {
@@ -91,8 +90,8 @@ export default function Agenda() {
   };
 
   const toggleProfessional = (id: string) => {
-    setSelectedProfessionalIds(prev => 
-      prev.includes(id) 
+    setSelectedProfessionalIds(prev =>
+      prev.includes(id)
         ? prev.filter(p => p !== id)
         : [...prev, id]
     );
@@ -110,26 +109,37 @@ export default function Agenda() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const getProfessionalColor = (index: number) => {
-    return professionalColors[index % professionalColors.length];
-  };
+  const filteredProfessionals = professionals
+    .filter(p =>
+      p.is_active &&
+      (selectedProfessionalIds.length === 0 || selectedProfessionalIds.includes(p.id)) &&
+      p.name.toLowerCase().includes(searchProfessional.toLowerCase())
+    )
+    .slice(0, maxColumns);
 
-  const filteredProfessionals = professionals.filter(p => 
-    p.is_active && 
-    (selectedProfessionalIds.length === 0 || selectedProfessionalIds.includes(p.id)) &&
-    p.name.toLowerCase().includes(searchProfessional.toLowerCase())
-  );
-
-  const getSlotIndex = (time: string) => {
-    return timeSlots.indexOf(time);
-  };
+  // Group professionals by role/specialty for sidebar
+  const professionalsByCategory = useMemo(() => {
+    const categories: Record<string, typeof professionals> = {};
+    professionals.filter(p => p.is_active).forEach(prof => {
+      const cat = prof.specialty || prof.role || "Geral";
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(prof);
+    });
+    return categories;
+  }, [professionals]);
 
   const getAppointmentsAtSlot = (professionalId: string, timeSlot: string) => {
     return appointments.filter(a => {
       const appointmentTime = format(new Date(a.scheduled_at), "HH:mm");
-      // Hide cancelled appointments unless they are blocked time slots
       const isBlocked = a.notes?.startsWith("🔒 BLOQUEADO:");
       if (a.status === "cancelled" && !isBlocked) return false;
+      // Filter by search
+      if (searchAppointment) {
+        const search = searchAppointment.toLowerCase();
+        const matchClient = a.clients?.name?.toLowerCase().includes(search);
+        const matchService = a.services?.name?.toLowerCase().includes(search);
+        if (!matchClient && !matchService) return false;
+      }
       return a.professional_id === professionalId && appointmentTime === timeSlot;
     });
   };
@@ -168,12 +178,11 @@ export default function Agenda() {
 
   const handleBlockTime = async (data: BlockTimeData) => {
     if (!salonId) return;
-    
+
     setIsBlocking(true);
     try {
       const scheduled_at = new Date(`${data.date}T${data.time}`).toISOString();
-      
-      // Create a "blocked" appointment (no client, no service, with reason in notes)
+
       const { error } = await supabase
         .from("appointments")
         .insert({
@@ -181,21 +190,21 @@ export default function Agenda() {
           professional_id: data.professional_id,
           scheduled_at,
           duration_minutes: data.duration_minutes,
-          status: "cancelled", // Using cancelled status for blocked time
+          status: "cancelled",
           notes: `🔒 BLOQUEADO: ${data.reason}`,
           client_id: null,
           service_id: null,
         });
 
       if (error) throw error;
-      
+
       queryClient.invalidateQueries({ queryKey: ["appointments", salonId] });
       toast({ title: "Horário bloqueado com sucesso!" });
     } catch (error: any) {
-      toast({ 
-        title: "Erro ao bloquear horário", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Erro ao bloquear horário",
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
       setIsBlocking(false);
@@ -216,113 +225,146 @@ export default function Agenda() {
 
   return (
     <AppLayoutNew>
-      <div className="flex flex-col lg:flex-row gap-4 h-full">
-        {/* Left Sidebar - Calendar & Filters - Collapsible on mobile */}
-        <div className="lg:w-72 lg:shrink-0 space-y-4">
-          {/* Mini Calendar - Hidden on mobile, shown as collapsed on tablet */}
-          <Card className="hidden md:block">
-            <CardContent className="p-3 md:p-4">
-              <div className="flex items-center justify-between mb-3">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToPreviousMonth}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm font-medium capitalize">{formatMonthYear(currentDate)}</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextMonth}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <Calendar
-                mode="single"
-                selected={currentDate}
-                onSelect={(date) => date && setCurrentDate(date)}
-                locale={ptBR}
-                className="w-full [&_.rdp-months]:flex [&_.rdp-months]:justify-center [&_.rdp-month]:w-full [&_.rdp-caption]:hidden [&_.rdp-table]:w-full"
-              />
-            </CardContent>
-          </Card>
+      <div className="flex flex-col lg:flex-row gap-0 h-full">
+        {/* Left Sidebar - Calendar & Filters */}
+        <div className="lg:w-56 xl:w-64 lg:shrink-0 lg:border-r border-border bg-card">
+          {/* Mini Calendar */}
+          <div className="hidden md:block p-3 border-b border-border">
+            <div className="flex items-center justify-between mb-2">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToPreviousMonth}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-semibold capitalize">{formatMonthYear(currentDate)}</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToNextMonth}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <Calendar
+              mode="single"
+              selected={currentDate}
+              onSelect={(date) => date && setCurrentDate(date)}
+              locale={ptBR}
+              className="w-full [&_.rdp-months]:flex [&_.rdp-months]:justify-center [&_.rdp-month]:w-full [&_.rdp-caption]:hidden [&_.rdp-table]:w-full [&_.rdp-head_cell]:w-8 [&_.rdp-cell]:w-8 [&_.rdp-cell]:h-8 [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-day]:text-xs"
+            />
+          </div>
 
-          {/* Professionals Filter - Horizontal scrollable on mobile */}
-          <Card>
-            <CardContent className="p-3 space-y-3">
-              <div className="font-medium text-sm">Profissionais</div>
-              <div className="relative hidden md:block">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Pesquisar profissional" 
-                  className="pl-8 h-8 text-sm"
-                  value={searchProfessional}
-                  onChange={(e) => setSearchProfessional(e.target.value)}
-                />
-              </div>
-              
-              {/* Mobile: Horizontal scroll */}
-              <div className="flex md:hidden gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {/* Professionals Filter */}
+          <div className="p-3 space-y-3">
+            <div className="font-semibold text-sm">Profissionais</div>
+            <div className="relative hidden md:block">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Pesquisar profissional"
+                className="pl-8 h-8 text-xs"
+                value={searchProfessional}
+                onChange={(e) => setSearchProfessional(e.target.value)}
+              />
+              {searchProfessional && (
                 <button
-                  onClick={toggleAll}
+                  onClick={() => setSearchProfessional("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Mobile: Horizontal scroll */}
+            <div className="flex md:hidden gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <button
+                onClick={toggleAll}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium shrink-0 border",
+                  selectedProfessionalIds.length === professionals.length
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/30 border-border"
+                )}
+              >
+                Todos
+              </button>
+              {professionals.filter(p => p.is_active).map((prof) => (
+                <button
+                  key={prof.id}
+                  onClick={() => toggleProfessional(prof.id)}
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium shrink-0 border",
-                    selectedProfessionalIds.length === professionals.length 
-                      ? "bg-primary text-primary-foreground border-primary" 
-                      : "bg-muted border-border"
+                    selectedProfessionalIds.includes(prof.id)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/30 border-border"
                   )}
                 >
-                  Todos
+                  {prof.nickname || prof.name.split(" ")[0]}
                 </button>
-                {professionals.filter(p => p.is_active).map((prof, index) => (
-                  <button
-                    key={prof.id}
-                    onClick={() => toggleProfessional(prof.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium shrink-0 border",
-                      selectedProfessionalIds.includes(prof.id)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted border-border"
-                    )}
-                  >
-                    <div className={`w-2 h-2 rounded-full ${getProfessionalColor(index)}`} />
-                    {prof.nickname || prof.name.split(" ")[0]}
-                  </button>
-                ))}
+              ))}
+            </div>
+
+            {/* Desktop: Categorized list like AVEC */}
+            <div className="hidden md:block space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedProfessionalIds.length === professionals.filter(p => p.is_active).length}
+                    onCheckedChange={toggleAll}
+                  />
+                  <span className="text-xs font-medium">Todos</span>
+                </div>
+                <button
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => setExpandCategories(!expandCategories)}
+                >
+                  {expandCategories ? "Recolher Tudo" : "Expandir Tudo"}
+                </button>
               </div>
 
-              {/* Desktop: Vertical list */}
-              <div className="hidden md:block space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      checked={selectedProfessionalIds.length === professionals.length}
-                      onCheckedChange={toggleAll}
+              {Object.entries(professionalsByCategory).map(([category, profs]) => (
+                <div key={category}>
+                  <div className="flex items-center gap-2 py-1">
+                    <Checkbox
+                      checked={profs.every(p => selectedProfessionalIds.includes(p.id))}
+                      onCheckedChange={() => {
+                        const allSelected = profs.every(p => selectedProfessionalIds.includes(p.id));
+                        if (allSelected) {
+                          setSelectedProfessionalIds(prev => prev.filter(id => !profs.some(p => p.id === id)));
+                        } else {
+                          setSelectedProfessionalIds(prev => [...new Set([...prev, ...profs.map(p => p.id)])]);
+                        }
+                      }}
                     />
-                    <span className="text-sm">Todos</span>
+                    <button
+                      onClick={() => setExpandCategories(!expandCategories)}
+                      className="text-xs font-medium text-foreground flex items-center gap-1"
+                    >
+                      <ChevronRight className={cn("h-3 w-3 transition-transform", expandCategories && "rotate-90")} />
+                      {category}
+                    </button>
                   </div>
-                  <button className="text-xs text-primary hover:underline">
-                    Expandir Tudo
-                  </button>
+                  {expandCategories && profs
+                    .filter(p => p.name.toLowerCase().includes(searchProfessional.toLowerCase()))
+                    .map((prof) => (
+                      <div key={prof.id} className="flex items-center gap-2 pl-6 py-0.5">
+                        <Checkbox
+                          checked={selectedProfessionalIds.includes(prof.id)}
+                          onCheckedChange={() => toggleProfessional(prof.id)}
+                        />
+                        <span className="text-xs">{prof.nickname || prof.name}</span>
+                      </div>
+                    ))}
                 </div>
-                {professionals.filter(p => p.is_active && p.name.toLowerCase().includes(searchProfessional.toLowerCase())).map((prof, index) => (
-                  <div key={prof.id} className="flex items-center gap-2">
-                    <Checkbox 
-                      checked={selectedProfessionalIds.includes(prof.id)}
-                      onCheckedChange={() => toggleProfessional(prof.id)}
-                    />
-                    <div className={`w-3 h-3 rounded-full ${getProfessionalColor(index)}`} />
-                    <span className="text-sm">{prof.name}</span>
-                  </div>
-                ))}
-                {professionals.filter(p => p.is_active).length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-2">
-                    Nenhum profissional cadastrado
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+
+              {professionals.filter(p => p.is_active).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Nenhum profissional cadastrado
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Main Content - Calendar Grid */}
-        <div className="flex-1 space-y-3 md:space-y-4 min-w-0">
-          {/* Header Controls - Responsive */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Top Controls Bar - Matches AVEC style */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-3 py-2 border-b border-border bg-card">
             {/* Mobile date display */}
             <div className="flex items-center gap-2 md:hidden w-full">
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToPreviousMonth}>
@@ -334,171 +376,209 @@ export default function Agenda() {
               </Button>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-1 md:gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="h-8 text-xs md:text-sm" onClick={goToToday}>
+            {/* Left: Action buttons */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-medium rounded-full px-4"
+                onClick={goToToday}
+              >
                 Hoje
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                className="h-8 text-xs md:text-sm hidden sm:flex"
+                className="h-8 text-xs font-medium rounded-full px-3"
                 onClick={() => {
                   setSelectedSlot(null);
                   setBlockModalOpen(true);
                 }}
               >
-                <Ban className="h-4 w-4 mr-1" />
-                <span className="hidden md:inline">Bloquear Horário</span>
-                <span className="md:hidden">Bloquear</span>
-              </Button>
-              <Button size="sm" className="h-8 text-xs md:text-sm ml-auto sm:ml-0" onClick={() => { setSelectedAppointment(null); setSelectedSlot(null); setModalOpen(true); }}>
-                <Plus className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Novo Agendamento</span>
-                <span className="sm:hidden">Novo</span>
+                <Ban className="h-3.5 w-3.5 mr-1.5" />
+                Bloquear Horário
               </Button>
             </div>
 
-            {/* Desktop only controls */}
-            <div className="hidden lg:flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Colunas:</span>
-              <div className="flex gap-1">
-                {[3, 5, 8].map(num => (
-                  <Button 
-                    key={num} 
-                    variant={filteredProfessionals.length === num ? "default" : "outline"} 
-                    size="sm"
-                    className="w-7 h-7 p-0 text-xs"
-                  >
-                    {num}
-                  </Button>
-                ))}
+            {/* Right: Column selector, search, view toggles */}
+            <div className="flex items-center gap-3">
+              {/* Column Selector */}
+              <div className="hidden lg:flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Ajustar colunas:</span>
+                <div className="flex gap-0.5">
+                  {columnOptions.map(num => (
+                    <button
+                      key={num}
+                      onClick={() => setMaxColumns(num)}
+                      className={cn(
+                        "w-7 h-7 rounded-md text-xs font-medium transition-colors",
+                        maxColumns === num
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/30 text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Search Appointments */}
+              <div className="relative hidden md:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar agendamento"
+                  className="pl-8 h-8 text-xs w-44"
+                  value={searchAppointment}
+                  onChange={(e) => setSearchAppointment(e.target.value)}
+                />
+              </div>
+
+              {/* View Toggle Icons */}
+              <div className="hidden md:flex items-center gap-0.5 border border-border rounded-md">
+                <button className="p-1.5 hover:bg-muted/30 rounded-l-md">
+                  <List className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <button className="p-1.5 hover:bg-muted/30">
+                  <Maximize2 className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <button className="p-1.5 hover:bg-muted/30 rounded-r-md">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                </button>
               </div>
             </div>
           </div>
 
           {/* Calendar Grid */}
-          <Card>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : filteredProfessionals.length === 0 ? (
-                <div className="text-center py-20 text-muted-foreground">
-                  <p className="mb-4">Nenhum profissional cadastrado para exibir na agenda.</p>
-                  <Button onClick={() => window.location.href = '/profissionais'}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Cadastrar Profissional
-                  </Button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto scrollbar-hide">
-                  <div className="min-w-[320px] md:min-w-[600px] lg:min-w-[900px]">
-                    {/* Professionals Header */}
-                    <div 
-                      className="grid border-b" 
-                      style={{ gridTemplateColumns: `48px repeat(${filteredProfessionals.length}, 1fr)` }}
-                    >
-                      <div className="p-1 md:p-2 border-r bg-muted/30 flex items-center justify-center">
-                        <Clock className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+          <div className="flex-1 overflow-hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredProfessionals.length === 0 ? (
+              <div className="text-center py-20 text-muted-foreground">
+                <p className="mb-4">Nenhum profissional cadastrado para exibir na agenda.</p>
+                <Button onClick={() => window.location.href = '/profissionais'}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Profissional
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto overflow-y-auto h-full scrollbar-hide">
+                <div style={{ minWidth: `${filteredProfessionals.length * 120 + 56}px` }}>
+                  {/* Professionals Header - Sticky */}
+                  <div
+                    className="grid sticky top-0 z-20 bg-[#f0f0f0] border-b-2 border-border"
+                    style={{ gridTemplateColumns: `56px repeat(${filteredProfessionals.length}, 1fr)` }}
+                  >
+                    <div className="p-2 flex items-center justify-center border-r border-border">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    {filteredProfessionals.map((professional) => (
+                      <div key={professional.id} className="py-2 px-1 border-r border-border last:border-r-0 text-center">
+                        <Avatar className="h-9 w-9 mx-auto mb-1 ring-2 ring-border">
+                          {professional.avatar_url && (
+                            <AvatarImage src={professional.avatar_url} alt={professional.name} />
+                          )}
+                          <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
+                            {getInitials(professional.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold text-[11px] block uppercase tracking-wide text-foreground truncate">
+                          {professional.nickname || professional.name.split(" ")[0]}
+                        </span>
                       </div>
-                      {filteredProfessionals.map((professional, index) => (
-                        <div key={professional.id} className="p-1 md:p-2 border-r last:border-r-0 bg-muted/30 text-center">
-                          <Avatar className="h-7 w-7 md:h-10 md:w-10 mx-auto mb-0.5 md:mb-1">
-                            {professional.avatar_url && (
-                              <AvatarImage src={professional.avatar_url} alt={professional.name} />
-                            )}
-                            <AvatarFallback className={`${getProfessionalColor(index)} text-white text-[10px] md:text-xs`}>
-                              {getInitials(professional.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-[9px] md:text-xs block uppercase truncate">
-                            {professional.nickname || professional.name.split(" ")[0]}
-                          </span>
+                    ))}
+                  </div>
+
+                  {/* Time Slots Grid */}
+                  <div>
+                    {timeSlots.map((time) => (
+                      <div
+                        key={time}
+                        className="grid border-b border-border/50"
+                        style={{ gridTemplateColumns: `56px repeat(${filteredProfessionals.length}, 1fr)` }}
+                      >
+                        {/* Time Label */}
+                        <div className="px-1 py-0 border-r border-border text-[11px] text-muted-foreground text-right pr-2 flex items-start justify-end pt-0.5 bg-card/50 font-medium">
+                          {time}
                         </div>
-                      ))}
-                    </div>
 
-                    {/* Time Slots */}
-                    <div className="relative max-h-[calc(100vh-320px)] md:max-h-[600px] overflow-y-auto">
-                      {timeSlots.map((time, timeIndex) => (
-                        <div
-                          key={time}
-                          className="grid border-b last:border-b-0"
-                          style={{ gridTemplateColumns: `48px repeat(${filteredProfessionals.length}, 1fr)` }}
-                        >
-                          <div className="p-0.5 md:p-1 border-r text-[10px] md:text-xs text-muted-foreground text-center bg-muted/10 flex items-center justify-center">
-                            {time}
-                          </div>
-                          {filteredProfessionals.map((professional) => {
-                            const slotAppointments = getAppointmentsAtSlot(professional.id, time);
-                            const appointmentCount = slotAppointments.length;
+                        {/* Professional Columns */}
+                        {filteredProfessionals.map((professional) => {
+                          const slotAppointments = getAppointmentsAtSlot(professional.id, time);
 
-                            return (
-                              <div
+                          return (
+                            <div
                               key={`${professional.id}-${time}`}
-                                className="relative border-r last:border-r-0 h-9 md:h-10 hover:bg-primary/10 transition-colors cursor-pointer"
-                                onClick={() => handleSlotClick(professional.id, time)}
-                              >
-                                {appointmentCount > 0 && (
-                                  <div className="absolute inset-0 flex gap-0.5 p-0.5">
-                                    {slotAppointments.map((appointment, idx) => {
-                                      const isBlocked = appointment.notes?.startsWith("🔒 BLOQUEADO:");
-                                      const blockReason = isBlocked ? appointment.notes?.replace("🔒 BLOQUEADO: ", "") : null;
-                                      
-                                      return (
-                                        <AppointmentHoverCard key={appointment.id} appointment={appointment}>
-                                          <div
-                                            className={`flex-1 rounded-sm p-0.5 z-10 cursor-pointer transition-shadow hover:shadow-md overflow-hidden ${isBlocked ? "bg-slate-700 text-white" : statusColors[appointment.status]}`}
-                                            style={{
-                                              height: `${Math.ceil(appointment.duration_minutes / 30) * 40 - 4}px`,
-                                            }}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              if (!isBlocked) {
-                                                handleSlotClick(professional.id, time, appointment);
-                                              }
-                                            }}
-                                          >
-                                            {isBlocked ? (
-                                              <>
-                                                <div className="text-[9px] font-medium truncate flex items-center gap-1">
-                                                  <Ban className="h-2 w-2" /> Bloqueado
+                              className="relative border-r border-border/30 last:border-r-0 h-[36px] hover:bg-primary/5 transition-colors cursor-pointer"
+                              onClick={() => handleSlotClick(professional.id, time)}
+                            >
+                              {slotAppointments.length > 0 && (
+                                <div className="absolute inset-0 flex gap-px p-px z-10">
+                                  {slotAppointments.map((appointment) => {
+                                    const isBlocked = appointment.notes?.startsWith("🔒 BLOQUEADO:");
+                                    const blockReason = isBlocked ? appointment.notes?.replace("🔒 BLOQUEADO: ", "") : null;
+                                    const spans = Math.ceil(appointment.duration_minutes / 30);
+
+                                    return (
+                                      <AppointmentHoverCard key={appointment.id} appointment={appointment}>
+                                        <div
+                                          className={cn(
+                                            "flex-1 rounded-sm px-1.5 py-0.5 cursor-pointer transition-shadow hover:shadow-lg overflow-hidden text-white",
+                                            isBlocked ? "bg-[#34495e]" : statusColors[appointment.status]
+                                          )}
+                                          style={{
+                                            height: `${spans * 36 - 2}px`,
+                                            position: "absolute",
+                                            left: "1px",
+                                            right: "1px",
+                                            top: "1px",
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!isBlocked) {
+                                              handleSlotClick(professional.id, time, appointment);
+                                            }
+                                          }}
+                                        >
+                                          {isBlocked ? (
+                                            <>
+                                              <div className="text-[10px] font-bold truncate flex items-center gap-1">
+                                                <Ban className="h-2.5 w-2.5 shrink-0" /> BLOQUEADO
+                                              </div>
+                                              <div className="text-[9px] opacity-80 truncate">
+                                                {blockReason}
+                                              </div>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <div className="text-[10px] font-bold truncate leading-tight">
+                                                {time} {appointment.clients?.name?.toUpperCase() || "CLIENTE"}
+                                              </div>
+                                              {appointment.services?.name && (
+                                                <div className="text-[9px] font-medium opacity-90 truncate uppercase leading-tight">
+                                                  {appointment.services.name}
                                                 </div>
-                                                <div className="text-[8px] opacity-90 truncate">
-                                                  {blockReason}
-                                                </div>
-                                              </>
-                                            ) : (
-                                              <>
-                                                <div className="text-[9px] font-medium truncate">
-                                                  {appointmentCount > 1 ? "" : `${time} `}{appointment.clients?.name || "Cliente"}
-                                                </div>
-                                                {appointment.services?.name && (
-                                                  <div className="text-[9px] opacity-90 truncate uppercase">
-                                                    {appointment.services.name}
-                                                  </div>
-                                                )}
-                                              </>
-                                            )}
-                                          </div>
-                                        </AppointmentHoverCard>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
+                                              )}
+                                            </>
+                                          )}
+                                        </div>
+                                      </AppointmentHoverCard>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
