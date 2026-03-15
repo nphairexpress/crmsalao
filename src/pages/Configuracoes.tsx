@@ -1202,69 +1202,60 @@ export default function Configuracoes() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="sistema" className="space-y-4">
-            {/* Salon Data */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados do Salão</CardTitle>
-                <CardDescription>Informações básicas do estabelecimento.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Em breve: configuração de nome, endereço, logo, CNPJ e dados do salão.</p>
-              </CardContent>
-            </Card>
-
-            {/* Master Transfer Section - Only visible to master user */}
-            {isMaster && (
-              <Card className="border-red-200 dark:border-red-800">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <ArrowRightLeft className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    <CardTitle className="text-lg text-red-600 dark:text-red-400">
-                      Transferir Acesso Master
-                    </CardTitle>
-                  </div>
-                  <CardDescription>
-                    Transfira seu acesso master para outro usuário. Esta ação é irreversível.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4 rounded-lg">
-                      <p className="text-sm text-red-700 dark:text-red-300">
-                        <strong>Atenção:</strong> Ao transferir o acesso master, você perderá as permissões exclusivas de:
-                      </p>
-                      <ul className="mt-2 text-sm text-red-600 dark:text-red-400 list-disc list-inside">
-                        <li>Excluir registros do sistema</li>
-                        <li>Alterar permissões de outros usuários</li>
-                        <li>Remover acessos de usuários</li>
-                        <li>Transferir acesso master novamente</li>
-                      </ul>
-                    </div>
-                    
-                    {eligibleUsersForMaster.length > 0 ? (
-                      <Button
-                        variant="destructive"
-                        onClick={() => setTransferMasterModalOpen(true)}
-                        className="gap-2"
-                      >
-                        <ArrowRightLeft className="h-4 w-4" />
+            {/* Sistema */}
+            <TabsContent value="sistema" className="space-y-4">
+              {/* Master Transfer Section - Only visible to master user */}
+              {isMaster && (
+                <Card className="border-red-200 dark:border-red-800">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <ArrowRightLeft className="h-5 w-5 text-red-600 dark:text-red-400" />
+                      <CardTitle className="text-lg text-red-600 dark:text-red-400">
                         Transferir Acesso Master
-                      </Button>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Não há outros usuários disponíveis para receber o acesso master. 
-                        Cadastre novos profissionais com acesso ao sistema primeiro.
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+                      </CardTitle>
+                    </div>
+                    <CardDescription>
+                      Transfira seu acesso master para outro usuário. Esta ação é irreversível.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                        <p className="text-sm text-red-700 dark:text-red-300">
+                          <strong>Atenção:</strong> Ao transferir o acesso master, você perderá as permissões exclusivas de:
+                        </p>
+                        <ul className="mt-2 text-sm text-red-600 dark:text-red-400 list-disc list-inside">
+                          <li>Excluir registros do sistema</li>
+                          <li>Alterar permissões de outros usuários</li>
+                          <li>Remover acessos de usuários</li>
+                          <li>Transferir acesso master novamente</li>
+                        </ul>
+                      </div>
+                      
+                      {eligibleUsersForMaster.length > 0 ? (
+                        <Button
+                          variant="destructive"
+                          onClick={() => setTransferMasterModalOpen(true)}
+                          className="gap-2"
+                        >
+                          <ArrowRightLeft className="h-4 w-4" />
+                          Transferir Acesso Master
+                        </Button>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Não há outros usuários disponíveis para receber o acesso master. 
+                          Cadastre novos profissionais com acesso ao sistema primeiro.
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
 
       <DeleteConfirmModal
