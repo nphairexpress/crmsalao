@@ -314,7 +314,7 @@ function MasterProfessionalProfile() {
   );
 }
 
-
+const ROLE_LABELS: Record<AppRole, { label: string; description: string; color: string }> = {
   admin: { label: "Administrador", description: "Acesso total ao sistema", color: "bg-red-500" },
   manager: { label: "Gerente", description: "Acesso completo exceto configurações do salão", color: "bg-orange-500" },
   receptionist: { label: "Recepcionista", description: "Agenda, clientes, comandas e caixa", color: "bg-blue-500" },
