@@ -323,11 +323,11 @@ export default function Configuracoes() {
     if (path === "/configuracoes") return "hub";
     if (path.startsWith("/configuracoes/estabelecimento")) return "estabelecimento";
     if (path.startsWith("/configuracoes/agendamento")) return "agendamento";
+    if (path.startsWith("/configuracoes/comissoes")) return "comissoes";
     if (path.startsWith("/configuracoes/financeiro")) return "financeiro";
     if (path.startsWith("/configuracoes/acessos")) return "acessos";
     if (path.startsWith("/configuracoes/profissionais")) return "profissionais";
     if (path.startsWith("/configuracoes/sistema")) return "sistema";
-    // Legacy routes
     if (path.startsWith("/configuracoes/salao")) return "hub";
     return "hub";
   })();
