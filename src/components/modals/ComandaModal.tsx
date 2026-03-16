@@ -10,8 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, Receipt, CheckCircle, Calendar, Eye, Pencil, Trash2, 
-  Printer, Clock, Plus, Minus, CreditCard, Banknote, Smartphone, X, Wallet, RefreshCw, Package
+  Printer, Clock, Plus, Minus, CreditCard, Banknote, Smartphone, X, Wallet, RefreshCw, Package, Gift
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useComandaItems, ComandaItem, Comanda } from "@/hooks/useComandas";
@@ -97,6 +98,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const [selectedCaixaId, setSelectedCaixaId] = useState<string | null>(null);
   const [caixaSelectModalOpen, setCaixaSelectModalOpen] = useState(false);
   const [serviceProductUsages, setServiceProductUsages] = useState<Record<string, ProductUsage[]>>({});
+  const [saveOverpaymentAsCredit, setSaveOverpaymentAsCredit] = useState(false);
 
   // Determine if comanda is from today
   const comandaDate = comanda ? new Date(comanda.created_at) : new Date();
@@ -570,12 +572,13 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
       return;
     }
 
-    if (difference < -0.01) {
+    if (difference < -0.01 && !saveOverpaymentAsCredit) {
       toast({ 
         title: "Pagamento excede o total", 
-        description: `Troco: ${formatCurrency(Math.abs(difference))}`,
+        description: `Marque a opção de salvar ${formatCurrency(Math.abs(difference))} como crédito do cliente ou ajuste o valor.`,
         variant: "destructive" 
       });
+      setActiveTab("pagamento");
       return;
     }
 
@@ -698,7 +701,25 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["comandas", salonId] });
+      // Save overpayment as client credit
+      if (saveOverpaymentAsCredit && difference < -0.01 && comanda.client_id) {
+        try {
+          const overpayment = Math.abs(difference);
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 90); // 90 days expiry
+          await supabase.from("client_credits").insert({
+            salon_id: salonId,
+            client_id: comanda.client_id,
+            comanda_id: comanda.id,
+            credit_amount: Math.round(overpayment * 100) / 100,
+            min_purchase_amount: 0,
+            expires_at: expiresAt.toISOString(),
+          });
+        } catch (creditError) {
+          console.error("Erro ao salvar crédito de troco:", creditError);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
       queryClient.invalidateQueries({ queryKey: ["products", salonId] });
       queryClient.invalidateQueries({ queryKey: ["client-credits"] });
@@ -1025,12 +1046,31 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                 <Card>
                   <CardContent className="p-4">
                     <Label className="text-xs text-muted-foreground">Diferença:</Label>
-                    <p className={`text-xl font-semibold ${difference < 0 ? 'text-destructive' : difference > 0 ? 'text-orange-500' : 'text-green-600'}`}>
-                      {formatCurrency(-difference)}
+                    <p className={`text-xl font-semibold ${difference > 0 ? 'text-destructive' : difference < 0 ? 'text-green-600' : 'text-foreground'}`}>
+                      {formatCurrency(Math.abs(difference))}
+                      {difference < 0 && ' (troco)'}
+                      {difference > 0 && ' (falta)'}
                     </p>
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Save overpayment as credit option */}
+              {difference < -0.01 && comanda?.client_id && (
+                <Card className="border-green-200 bg-green-50/50">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Checkbox 
+                      id="save-credit"
+                      checked={saveOverpaymentAsCredit}
+                      onCheckedChange={(checked) => setSaveOverpaymentAsCredit(!!checked)}
+                    />
+                    <label htmlFor="save-credit" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                      <Gift className="h-4 w-4 text-green-600" />
+                      Salvar {formatCurrency(Math.abs(difference))} como crédito para o cliente
+                    </label>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Total to Pay */}
               <Card className="bg-muted/50">
