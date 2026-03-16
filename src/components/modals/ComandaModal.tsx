@@ -572,12 +572,13 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
       return;
     }
 
-    if (difference < -0.01) {
+    if (difference < -0.01 && !saveOverpaymentAsCredit) {
       toast({ 
         title: "Pagamento excede o total", 
-        description: `Troco: ${formatCurrency(Math.abs(difference))}`,
+        description: `Marque a opção de salvar ${formatCurrency(Math.abs(difference))} como crédito do cliente ou ajuste o valor.`,
         variant: "destructive" 
       });
+      setActiveTab("pagamento");
       return;
     }
 
