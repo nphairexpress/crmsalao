@@ -278,6 +278,12 @@ export default function Estoque() {
                       <ArrowUpFromLine className="h-4 w-4" />
                       Saída
                     </Button>
+                    {isMaster && (
+                      <Button variant="outline" className="gap-2" onClick={() => setImportProductsOpen(true)}>
+                        <Upload className="h-4 w-4" />
+                        Importar
+                      </Button>
+                    )}
                     <Button onClick={() => { setSelectedProduct(null); setProductModalOpen(true); }} className="gap-2">
                       <Plus className="h-4 w-4" />
                       Cadastrar
