@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Mail, Send } from "lucide-react";
+import { Plus, Pencil, Trash2, Mail, Send, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { EmailCampaignModal } from "@/components/marketing/EmailCampaignModal";
+import { sendEmail } from "@/lib/sendEmail";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
