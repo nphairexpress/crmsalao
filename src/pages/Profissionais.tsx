@@ -190,6 +190,7 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
   const [bankForm, setBankForm] = useState({
     person_type: "fisica", account_holder: "", holder_cpf: "",
     bank_name: "", account_type: "corrente", agency: "", account_number: "", account_digit: "",
+    transfer_type: "ted", pix_key: "",
   });
 
   // Commission rules form
