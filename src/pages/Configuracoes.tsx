@@ -1147,6 +1147,15 @@ export default function Configuracoes() {
             <WebhookSettingsSection />
           </>
         )}
+
+        {/* ===== API REST ===== */}
+        {subPage === "api" && (
+          <>
+            <SettingsBreadcrumb label="API REST" />
+            <h1 className="text-2xl font-bold tracking-tight">API REST Gateway</h1>
+            <ApiGatewaySettingsSection />
+          </>
+        )}
       </div>
 
       {/* Modals */}
