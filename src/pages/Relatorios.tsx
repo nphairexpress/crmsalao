@@ -188,10 +188,6 @@ export default function Relatorios() {
 
           <TabsContent value="geral" className="space-y-6">
         {/* Date filters */}
-          <div>
-            <h1 className="text-2xl font-bold">Relatórios</h1>
-            <p className="text-muted-foreground">Análise detalhada do desempenho do salão</p>
-          </div>
           <div className="flex flex-wrap items-center gap-2">
             {PRESET_RANGES.map(preset => (
               <Button
