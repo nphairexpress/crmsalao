@@ -611,7 +611,7 @@ export default function Configuracoes() {
 
   // Handlers
   const handleRoleChange = (userId: string, newRole: AppRole) => {
-    if (!isMaster) { toast({ title: "Acesso negado", description: "Apenas o usuário master pode alterar permissões.", variant: "destructive" }); return; }
+    if (!canManageAccess) { toast({ title: "Acesso negado", description: "Apenas o usuário master pode alterar permissões.", variant: "destructive" }); return; }
     const matchingAccessLevel = accessLevels.find((level) => level.system_key === newRole) ?? null;
     updateRole({ userId, newRole, accessLevelId: matchingAccessLevel?.id ?? null });
   };
