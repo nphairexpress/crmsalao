@@ -83,6 +83,7 @@ function ProfessionalSidebar({
   showInactive,
   onToggleInactive,
   inactiveCount,
+  masterEmail,
 }: {
   professionals: Professional[];
   selectedId: string | null;
@@ -93,6 +94,7 @@ function ProfessionalSidebar({
   showInactive: boolean;
   onToggleInactive: () => void;
   inactiveCount: number;
+  masterEmail: string | null;
 }) {
   return (
     <div className="w-64 shrink-0 border-r bg-muted/30 flex flex-col h-full">
