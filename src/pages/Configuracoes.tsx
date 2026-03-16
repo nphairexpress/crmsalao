@@ -581,6 +581,7 @@ export default function Configuracoes() {
     if (path.startsWith("/configuracoes/acessos")) return "acessos";
     if (path.startsWith("/configuracoes/profissionais")) return "profissionais";
     if (path.startsWith("/configuracoes/sistema")) return "sistema";
+    if (path.startsWith("/configuracoes/webhook")) return "webhook";
     if (path.startsWith("/configuracoes/salao")) return "hub";
     return "hub";
   })();
