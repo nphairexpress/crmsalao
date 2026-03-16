@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Loader2, Package, AlertTriangle, Edit, Trash2, Truck, Globe, Phone, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, Search, Loader2, Package, AlertTriangle, Edit, Trash2, Truck, Globe, Phone, ArrowDownToLine, ArrowUpFromLine, Upload } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useSuppliers, Supplier, SupplierInput } from "@/hooks/useSuppliers";
 import { ProductModal } from "@/components/modals/ProductModal";
@@ -14,6 +14,11 @@ import { SupplierModal } from "@/components/modals/SupplierModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
 import { StockEntryModal } from "@/components/modals/StockEntryModal";
 import { StockExitModal } from "@/components/modals/StockExitModal";
+import { ImportModal, ImportField } from "@/components/modals/ImportModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Estoque() {
   const location = useLocation();
@@ -29,6 +34,55 @@ export default function Estoque() {
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
   const [stockEntryModalOpen, setStockEntryModalOpen] = useState(false);
   const [stockExitModalOpen, setStockExitModalOpen] = useState(false);
+  const [importProductsOpen, setImportProductsOpen] = useState(false);
+
+  const { isMaster, salonId } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const productImportFields: ImportField[] = [
+    { key: "name", label: "Nome", required: true },
+    { key: "description", label: "Descrição" },
+    { key: "sku", label: "SKU / Código" },
+    { key: "category", label: "Categoria" },
+    { key: "brand", label: "Marca" },
+    { key: "product_line", label: "Linha" },
+    { key: "cost_price", label: "Preço de custo" },
+    { key: "sale_price", label: "Preço de venda" },
+    { key: "current_stock", label: "Estoque atual" },
+    { key: "min_stock", label: "Estoque mínimo" },
+    { key: "unit_of_measure", label: "Unidade de medida" },
+    { key: "commission_percent", label: "Comissão (%)" },
+  ];
+
+  const handleImportProducts = async (records: Record<string, any>[]) => {
+    if (!salonId) throw new Error("Salão não encontrado");
+    const rows = records.map(r => ({
+      salon_id: salonId,
+      name: String(r.name),
+      description: r.description ? String(r.description) : null,
+      sku: r.sku ? String(r.sku) : null,
+      category: r.category ? String(r.category) : null,
+      brand: r.brand ? String(r.brand) : null,
+      product_line: r.product_line ? String(r.product_line) : null,
+      cost_price: r.cost_price ? parseFloat(String(r.cost_price).replace(",", ".")) : 0,
+      sale_price: r.sale_price ? parseFloat(String(r.sale_price).replace(",", ".")) : 0,
+      current_stock: r.current_stock ? parseInt(String(r.current_stock)) : 0,
+      min_stock: r.min_stock ? parseInt(String(r.min_stock)) : 0,
+      unit_of_measure: r.unit_of_measure ? String(r.unit_of_measure) : "unidade",
+      commission_percent: r.commission_percent ? parseFloat(String(r.commission_percent).replace(",", ".")) : 0,
+      is_active: true,
+    }));
+
+    for (let i = 0; i < rows.length; i += 50) {
+      const batch = rows.slice(i, i + 50);
+      const { error } = await supabase.from("products").insert(batch);
+      if (error) throw error;
+    }
+
+    qc.invalidateQueries({ queryKey: ["products"] });
+    toast({ title: `${rows.length} produtos importados com sucesso!` });
+  };
 
   const { products, isLoading: isLoadingProducts, createProduct, updateProduct, deleteProduct, isCreating, isUpdating } = useProducts();
   const { 
@@ -224,6 +278,12 @@ export default function Estoque() {
                       <ArrowUpFromLine className="h-4 w-4" />
                       Saída
                     </Button>
+                    {isMaster && (
+                      <Button variant="outline" className="gap-2" onClick={() => setImportProductsOpen(true)}>
+                        <Upload className="h-4 w-4" />
+                        Importar
+                      </Button>
+                    )}
                     <Button onClick={() => { setSelectedProduct(null); setProductModalOpen(true); }} className="gap-2">
                       <Plus className="h-4 w-4" />
                       Cadastrar
@@ -451,6 +511,15 @@ export default function Estoque() {
         open={stockExitModalOpen}
         onOpenChange={setStockExitModalOpen}
         products={products}
+      />
+
+      <ImportModal
+        open={importProductsOpen}
+        onOpenChange={setImportProductsOpen}
+        title="Importar Produtos"
+        description="Importe produtos de uma planilha XLS, XLSX ou CSV exportada de outro sistema."
+        fields={productImportFields}
+        onImport={handleImportProducts}
       />
     </AppLayoutNew>
   );
