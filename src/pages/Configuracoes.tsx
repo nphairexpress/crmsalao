@@ -1065,7 +1065,7 @@ export default function Configuracoes() {
                                         variant="outline"
                                         size="icon"
                                         className="h-8 w-8"
-                                        onClick={() => { setSelectedAccessLevel(level); setAccessLevelConfigModalOpen(true); }}
+                                        onClick={() => { setSelectedAccessLevelId(level.id); setAccessLevelConfigModalOpen(true); }}
                                       >
                                         <Pencil className="h-4 w-4" />
                                       </Button>
