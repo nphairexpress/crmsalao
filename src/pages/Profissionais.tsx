@@ -317,6 +317,7 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
           salonId,
           professionalId: professional.id,
           accessLevel: "professional",
+          accessLevelId: selectedAccessLevelId || undefined,
         },
       });
       if (error) throw error;
