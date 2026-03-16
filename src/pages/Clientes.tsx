@@ -6,10 +6,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Pencil, Trash2, Loader2, Merge, FileText, Settings, MessageCircle } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Loader2, Merge, FileText, Settings, MessageCircle, Upload } from "lucide-react";
 import { useClients, Client, ClientInput } from "@/hooks/useClients";
 import { ClientModal } from "@/components/modals/ClientModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { ImportModal, ImportField } from "@/components/modals/ImportModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
