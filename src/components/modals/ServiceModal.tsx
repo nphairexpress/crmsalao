@@ -36,6 +36,9 @@ export function ServiceModal({ open, onOpenChange, service, onSubmit, isLoading 
     commission_percent: 0,
     category: "",
     is_active: true,
+    send_return_reminder: false,
+    return_reminder_days: 30,
+    return_reminder_message: "",
   });
   const [activeTab, setActiveTab] = useState("info");
   const [selectedProductId, setSelectedProductId] = useState<string>("");
