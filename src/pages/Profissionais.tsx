@@ -23,6 +23,7 @@ import { useProfessionals, Professional, ProfessionalInput } from "@/hooks/usePr
 import { useProfessionalWorkSchedules, WorkScheduleInput } from "@/hooks/useProfessionalWorkSchedules";
 import { useProfessionalBankDetails, BankDetailsInput } from "@/hooks/useProfessionalBankDetails";
 import { useProfessionalCommissionRules, CommissionRulesInput } from "@/hooks/useProfessionalCommissionRules";
+import { useAccessLevels } from "@/hooks/useAccessLevels";
 import { ProfessionalCommissionsTab } from "@/components/professionals/ProfessionalCommissionsTab";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
 import { useCepLookup } from "@/hooks/useCepLookup";
@@ -151,13 +152,15 @@ function ProfessionalSidebar({
 
 // ===== MAIN FORM =====
 function ProfessionalForm({ professional }: { professional: Professional }) {
-  const { canDelete, isMaster } = useAuth();
+  const { canDelete, isMaster, salonId } = useAuth();
   const { toast } = useToast();
   const { updateProfessional, isUpdating, deactivateProfessional, reactivateProfessional } = useProfessionals();
   const { schedules, upsertSchedule, deleteSchedule, isSaving: isSavingSchedule } = useProfessionalWorkSchedules(professional.id);
   const { bankDetails, saveBankDetails, deleteBankDetails, isSaving: isSavingBank } = useProfessionalBankDetails(professional.id);
   const { rules, saveRules, isSaving: isSavingRules } = useProfessionalCommissionRules(professional.id);
+  const { accessLevels } = useAccessLevels();
   const { lookupCep, isLoading: isLookingUpCep } = useCepLookup();
+  const [selectedAccessLevelId, setSelectedAccessLevelId] = useState<string | null>(null);
 
   // Professional data form
   const [form, setForm] = useState({
@@ -253,6 +256,52 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
       });
     }
   }, [rules]);
+
+  // Load access level for this professional
+  useEffect(() => {
+    if (professional.user_id && salonId) {
+      supabase
+        .from("user_roles")
+        .select("access_level_id")
+        .eq("user_id", professional.user_id)
+        .eq("salon_id", salonId)
+        .maybeSingle()
+        .then(({ data }) => {
+          setSelectedAccessLevelId(data?.access_level_id || null);
+        });
+    }
+  }, [professional.user_id, salonId]);
+
+  const handleAccessLevelChange = async (accessLevelId: string) => {
+    if (!professional.user_id || !salonId) return;
+    setSelectedAccessLevelId(accessLevelId);
+    const { error } = await supabase.functions.invoke("update-user-role", {
+      body: {
+        userId: professional.user_id,
+        salonId,
+        newRole: "professional",
+        accessLevelId,
+      },
+    });
+    if (error) {
+      toast({ title: "Erro ao atualizar nível de acesso", variant: "destructive" });
+    } else {
+      toast({ title: "Nível de acesso atualizado!" });
+    }
+  };
+
+  const handleDeleteAccess = async () => {
+    if (!professional.user_id || !salonId) return;
+    if (!confirm("Tem certeza que deseja excluir o acesso deste profissional ao sistema?")) return;
+    const { error } = await supabase.functions.invoke("delete-user-access", {
+      body: { userId: professional.user_id, salonId },
+    });
+    if (error) {
+      toast({ title: "Erro ao excluir acesso", variant: "destructive" });
+    } else {
+      toast({ title: "Acesso excluído com sucesso!" });
+    }
+  };
 
   const handleSaveProfile = () => {
     if (!form.name.trim()) {
@@ -449,20 +498,51 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
-            {professional.create_access ? (
-              <div className="space-y-3">
+            {professional.create_access || professional.user_id ? (
+              <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs">E-mail de acesso:</Label>
                   <div className="flex items-center gap-2">
                     <Input value={form.email} readOnly className="bg-muted" />
-                    <Button variant="outline" size="sm" className="gap-1 shrink-0">
-                      <KeyRound className="h-3.5 w-3.5" /> Trocar Senha
-                    </Button>
+                    {isMaster && (
+                      <>
+                        <Button variant="outline" size="sm" className="gap-1 shrink-0">
+                          <KeyRound className="h-3.5 w-3.5" /> Trocar Senha
+                        </Button>
+                        <Button variant="destructive" size="sm" className="gap-1 shrink-0" onClick={handleDeleteAccess}>
+                          <Trash2 className="h-3.5 w-3.5" /> Excluir Acesso
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Nível de acesso:</Label>
+                  <Select
+                    value={selectedAccessLevelId || ""}
+                    onValueChange={handleAccessLevelChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o nível de acesso" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accessLevels.map((level) => (
+                        <SelectItem key={level.id} value={level.id}>
+                          {level.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Não encontrou o acesso ideal? Configure os níveis de acesso em{" "}
+                    <a href="/configuracoes?tab=usuarios" className="text-primary underline">Configurações → Usuários e Acessos</a>.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 p-3 bg-accent/50 border border-border rounded-lg">
                   <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-sm text-green-700 dark:text-green-300">Este profissional possui acesso ao sistema</span>
+                  <span className="text-sm">Este profissional possui acesso ao sistema</span>
                 </div>
               </div>
             ) : (

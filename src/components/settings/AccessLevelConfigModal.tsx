@@ -8,15 +8,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   AccessLevelWithPermissions,
-  PERMISSION_CATEGORIES,
-  PERMISSION_LABELS,
+  PERMISSION_FEATURES,
+  PERMISSION_ACTIONS,
 } from "@/hooks/useAccessLevels";
 
 interface AccessLevelConfigModalProps {
@@ -28,17 +26,6 @@ interface AccessLevelConfigModalProps {
   isUpdating: boolean;
 }
 
-const COLOR_OPTIONS = [
-  "#ef4444", // red
-  "#f97316", // orange
-  "#eab308", // yellow
-  "#22c55e", // green
-  "#3b82f6", // blue
-  "#6366f1", // indigo
-  "#a855f7", // purple
-  "#ec4899", // pink
-];
-
 export function AccessLevelConfigModal({
   open,
   onOpenChange,
@@ -48,14 +35,10 @@ export function AccessLevelConfigModal({
   isUpdating,
 }: AccessLevelConfigModalProps) {
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [color, setColor] = useState("#6366f1");
 
   useEffect(() => {
     if (accessLevel) {
       setName(accessLevel.name);
-      setDescription(accessLevel.description || "");
-      setColor(accessLevel.color);
     }
   }, [accessLevel]);
 
@@ -67,17 +50,6 @@ export function AccessLevelConfigModal({
     }
   };
 
-  const handleDescriptionBlur = () => {
-    if (description !== (accessLevel.description || "")) {
-      onUpdateAccessLevel({ id: accessLevel.id, description: description.trim() || undefined });
-    }
-  };
-
-  const handleColorChange = (newColor: string) => {
-    setColor(newColor);
-    onUpdateAccessLevel({ id: accessLevel.id, color: newColor });
-  };
-
   const handlePermissionToggle = (permissionKey: string, currentValue: boolean) => {
     onUpdatePermission({
       accessLevelId: accessLevel.id,
@@ -86,126 +58,101 @@ export function AccessLevelConfigModal({
     });
   };
 
-  const isSystem = accessLevel.is_system;
   const isAdmin = accessLevel.system_key === "admin";
+  const isSystem = accessLevel.is_system;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Configurar Nível de Acesso
-            {isSystem && (
-              <Badge variant="secondary" className="text-xs">
-                <Lock className="h-3 w-3 mr-1" />
-                Sistema
-              </Badge>
-            )}
+          <DialogTitle className="text-primary text-xl">
+            Editar grupo de acesso
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Basic Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={handleNameBlur}
-                disabled={isSystem}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Cor</Label>
-              <div className="flex gap-2">
-                {COLOR_OPTIONS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => !isSystem && handleColorChange(c)}
-                    disabled={isSystem}
-                    className={`h-8 w-8 rounded-full border-2 transition-all ${
-                      color === c ? "border-foreground scale-110" : "border-transparent"
-                    } ${isSystem ? "opacity-50 cursor-not-allowed" : "hover:scale-105"}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+          <div className="space-y-1.5">
+            <Label className="text-sm">
+              Qual o <strong>nome</strong> do grupo de acesso? <span className="text-muted-foreground">(Obrigatório)</span>
+            </Label>
             <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onBlur={handleDescriptionBlur}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={handleNameBlur}
               disabled={isSystem}
-              placeholder="Descrição do nível de acesso"
             />
           </div>
 
-          <Separator />
-
-          {/* Permissions */}
-          <div className="space-y-2">
-            <Label className="text-base font-semibold">Permissões</Label>
-            {isAdmin && (
-              <p className="text-sm text-muted-foreground">
-                O nível Administrador tem todas as permissões habilitadas e não pode ser modificado.
-              </p>
-            )}
+          <div className="space-y-1.5">
+            <Label className="text-sm">Quais acessos gostaria de vincular ao grupo?</Label>
           </div>
 
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-6">
-              {Object.entries(PERMISSION_CATEGORIES).map(([categoryKey, category]) => (
-                <div key={categoryKey} className="space-y-3">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
-                    {category.label}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 pl-5">
-                    {category.permissions.map((permKey) => {
-                      const isEnabled = accessLevel.permissions[permKey] ?? false;
-                      const label = PERMISSION_LABELS[permKey] || permKey.split(".")[1];
+          {isAdmin ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              O nível Administrador tem acesso completo e não pode ser modificado.
+            </p>
+          ) : (
+            <ScrollArea className="h-[450px] border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
+                  <tr className="border-b">
+                    <th className="text-left p-3 font-semibold">
+                      Funcionalidades para esse<br />profissional:
+                    </th>
+                    {PERMISSION_ACTIONS.map(action => (
+                      <th key={action.key} className="text-center p-3 font-semibold w-24">
+                        {action.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {PERMISSION_FEATURES.map((feature, index) => {
+                    return (
+                      <tr
+                        key={feature.key}
+                        className={index % 2 === 0 ? "bg-muted/30" : ""}
+                      >
+                        <td className="p-3">{feature.label}</td>
+                        {PERMISSION_ACTIONS.map(action => {
+                          const permKey = `${feature.key}.${action.key}`;
+                          const hasAction = feature.actions.includes(action.key);
+                          const isEnabled = accessLevel.permissions[permKey] ?? false;
 
-                      return (
-                        <div
-                          key={permKey}
-                          className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/50"
-                        >
-                          <span className="text-sm">{label}</span>
-                          <Switch
-                            checked={isEnabled}
-                            onCheckedChange={() => handlePermissionToggle(permKey, isEnabled)}
-                            disabled={isAdmin || isUpdating}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+                          return (
+                            <td key={action.key} className="text-center p-3">
+                              {hasAction ? (
+                                <Checkbox
+                                  checked={isEnabled}
+                                  onCheckedChange={() => handlePermissionToggle(permKey, isEnabled)}
+                                  disabled={isUpdating}
+                                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                />
+                              ) : null}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </ScrollArea>
+          )}
         </div>
 
-        <div className="flex justify-end pt-4">
-          <Button onClick={() => onOpenChange(false)}>
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => onOpenChange(false)} disabled={isUpdating}>
             {isUpdating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Salvando...
               </>
             ) : (
-              "Fechar"
+              "Salvar"
             )}
           </Button>
         </div>
