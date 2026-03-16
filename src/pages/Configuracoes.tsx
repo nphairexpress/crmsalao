@@ -622,7 +622,7 @@ export default function Configuracoes() {
   };
 
   const handleDeleteAccess = (userAccess: UserWithAccess) => {
-    if (!isMaster) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
+    if (!canManageAccess) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
     setSelectedUser(userAccess);
     setDeleteModalOpen(true);
   };
