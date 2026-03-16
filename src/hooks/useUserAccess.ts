@@ -60,7 +60,7 @@ export function useUserAccess() {
         usersWithAccess.push({
           id: role.id,
           user_id: role.user_id,
-          full_name: profile?.full_name || "Usuário",
+          full_name: professional?.name || profile?.full_name || "Usuário",
           email: "",
           role: role.role as AppRole,
           access_level_id: role.access_level_id ?? null,
