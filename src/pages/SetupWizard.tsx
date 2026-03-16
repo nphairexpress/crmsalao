@@ -50,6 +50,7 @@ export default function SetupWizard() {
     supabaseUrl: "",
     supabaseAnonKey: "",
     supabaseServiceRoleKey: "",
+    supabaseDbPassword: "",
     salonName: "",
     tradeName: "",
     salonPhone: "",
