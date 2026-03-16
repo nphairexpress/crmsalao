@@ -41,10 +41,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   const { user, loading } = useAuth();
 
-  // Check if any salon exists in the database
+  // Check if Supabase is properly configured (env vars present and valid)
+  const supabaseConfigured = Boolean(
+    import.meta.env.VITE_SUPABASE_URL &&
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY &&
+    import.meta.env.VITE_SUPABASE_URL !== "https://placeholder.supabase.co"
+  );
+
+  // Check if any salon exists in the database (only if Supabase is configured)
   const { data: hasSalon, isLoading: checkingSalon } = useQuery({
     queryKey: ["setup-check"],
     queryFn: async () => {
+      if (!supabaseConfigured) return false;
       const { count, error } = await supabase
         .from("salons")
         .select("id", { count: "exact", head: true });
@@ -52,7 +60,18 @@ function AppRoutes() {
       return (count ?? 0) > 0;
     },
     staleTime: 60000,
+    enabled: supabaseConfigured,
   });
+
+  // If Supabase is not configured, go straight to setup wizard
+  if (!supabaseConfigured) {
+    return (
+      <Routes>
+        <Route path="/setup" element={<SetupWizard />} />
+        <Route path="*" element={<Navigate to="/setup" replace />} />
+      </Routes>
+    );
+  }
 
   if (loading || checkingSalon)
     return (
