@@ -949,7 +949,7 @@ export default function Configuracoes() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {isMaster && !isAdmin ? (
+                                {canManageAccess && !isAdmin ? (
                                   <Select value={userAccess.role} onValueChange={(value) => handleRoleChange(userAccess.user_id, value as AppRole)} disabled={isUpdating}>
                                     <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                                     <SelectContent>
