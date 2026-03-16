@@ -561,7 +561,9 @@ function SchedulingSettingsSection() {
 
 // ===== MAIN COMPONENT =====
 export default function Configuracoes() {
-  const { isMaster, user } = useAuth();
+  const { isMaster, user, userRole } = useAuth();
+  const canManageAccess = isMaster || userRole === "admin";
+  console.log("[Configuracoes] isMaster:", isMaster, "userRole:", userRole, "email:", user?.email, "canManageAccess:", canManageAccess);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -609,18 +611,18 @@ export default function Configuracoes() {
 
   // Handlers
   const handleRoleChange = (userId: string, newRole: AppRole) => {
-    if (!isMaster) { toast({ title: "Acesso negado", description: "Apenas o usuário master pode alterar permissões.", variant: "destructive" }); return; }
+    if (!canManageAccess) { toast({ title: "Acesso negado", description: "Apenas o usuário master pode alterar permissões.", variant: "destructive" }); return; }
     const matchingAccessLevel = accessLevels.find((level) => level.system_key === newRole) ?? null;
     updateRole({ userId, newRole, accessLevelId: matchingAccessLevel?.id ?? null });
   };
 
   const handleToggleCanOpenCaixa = (userId: string, currentValue: boolean) => {
-    if (!isMaster) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
+    if (!canManageAccess) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
     updateCanOpenCaixa({ userId, canOpenCaixa: !currentValue });
   };
 
   const handleDeleteAccess = (userAccess: UserWithAccess) => {
-    if (!isMaster) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
+    if (!canManageAccess) { toast({ title: "Acesso negado", variant: "destructive" }); return; }
     setSelectedUser(userAccess);
     setDeleteModalOpen(true);
   };
@@ -897,7 +899,7 @@ export default function Configuracoes() {
                         Os acessos são criados ao cadastrar um profissional com "Criar acesso ao sistema" habilitado. 
                         Aqui você pode alterar o nível de permissão de cada usuário.
                       </p>
-                      {!isMaster && (
+                      {!canManageAccess && (
                         <p className="text-sm text-orange-600 dark:text-orange-400 mt-2 font-medium">
                           ⚠️ Apenas o usuário master pode alterar permissões.
                         </p>
@@ -947,7 +949,7 @@ export default function Configuracoes() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {isMaster && !isAdmin ? (
+                                {canManageAccess && !isAdmin ? (
                                   <Select value={userAccess.role} onValueChange={(value) => handleRoleChange(userAccess.user_id, value as AppRole)} disabled={isUpdating}>
                                     <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -970,14 +972,14 @@ export default function Configuracoes() {
                                 )}
                               </TableCell>
                               <TableCell className="text-center">
-                                {isMaster && !isAdmin ? (
+                                {canManageAccess && !isAdmin ? (
                                   <Switch checked={userAccess.can_open_caixa} onCheckedChange={() => handleToggleCanOpenCaixa(userAccess.user_id, userAccess.can_open_caixa)} disabled={isUpdating} />
                                 ) : (
                                   <Badge variant={userAccess.can_open_caixa ? "default" : "secondary"}>{userAccess.can_open_caixa ? "Sim" : "Não"}</Badge>
                                 )}
                               </TableCell>
                               <TableCell>
-                                {isMaster && !isAdmin && !isCurrentUser && (
+                                {canManageAccess && !isAdmin && !isCurrentUser && (
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
@@ -1005,7 +1007,7 @@ export default function Configuracoes() {
                       <CardTitle className="text-lg">Grupos de Acessos</CardTitle>
                       <CardDescription>Configure os grupos de acesso e suas permissões para os profissionais.</CardDescription>
                     </div>
-                    {isMaster && (
+                    {canManageAccess && (
                       <Button onClick={() => setCreateAccessLevelModalOpen(true)} className="gap-2">
                         <Plus className="h-4 w-4" /> Adicionar grupo
                       </Button>
@@ -1066,7 +1068,7 @@ export default function Configuracoes() {
                                       >
                                         <Pencil className="h-4 w-4" />
                                       </Button>
-                                      {!level.is_system && isMaster && (
+                                      {!level.is_system && canManageAccess && (
                                         <Button
                                           variant="destructive"
                                           size="icon"
