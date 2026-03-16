@@ -51,6 +51,63 @@ export function EmailCampaignsTab() {
     },
   });
 
+  const sendCampaignMutation = useMutation({
+    mutationFn: async (campaign: any) => {
+      if (!salonId) throw new Error("Salão não encontrado");
+      // Get clients based on target_type
+      let query = supabase
+        .from("clients")
+        .select("id, name, email, tags, allow_email_campaigns")
+        .eq("salon_id", salonId)
+        .eq("allow_email_campaigns", true)
+        .not("email", "is", null);
+
+      if (campaign.target_type === "tag" && campaign.target_tag) {
+        query = query.contains("tags", [campaign.target_tag]);
+      }
+
+      const { data: clients, error } = await query;
+      if (error) throw error;
+      if (!clients || clients.length === 0) throw new Error("Nenhum cliente elegível encontrado");
+
+      let sent = 0;
+      for (const client of clients) {
+        if (!client.email) continue;
+        try {
+          await sendEmail({
+            type: "campaign",
+            salon_id: salonId,
+            to_email: client.email,
+            to_name: client.name,
+            client_id: client.id,
+            campaign_id: campaign.id,
+            subject: campaign.subject,
+            body: campaign.body,
+          });
+          sent++;
+        } catch (e) {
+          console.error("Failed to send to", client.email, e);
+        }
+      }
+
+      // Update campaign status
+      await supabase.from("email_campaigns").update({
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        recipients_count: sent,
+      }).eq("id", campaign.id);
+
+      return sent;
+    },
+    onSuccess: (sent) => {
+      queryClient.invalidateQueries({ queryKey: ["email_campaigns", salonId] });
+      toast({ title: `Campanha enviada para ${sent} clientes!` });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro ao enviar campanha", description: e.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
