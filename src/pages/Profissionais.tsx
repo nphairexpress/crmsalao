@@ -134,9 +134,11 @@ function ProfessionalSidebar({
               </AvatarFallback>
             </Avatar>
             <span className="truncate uppercase text-xs">{p.nickname || p.name}</span>
-            {p.user_id && (
-              <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 shrink-0">MASTER</Badge>
-            )}
+            {p.user_id && masterEmail && p.email === masterEmail ? (
+              <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 shrink-0 border-primary text-primary">MASTER</Badge>
+            ) : p.user_id ? (
+              <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 shrink-0">ACESSO</Badge>
+            ) : null}
           </button>
         ))}
       </div>
