@@ -336,7 +336,7 @@ export default function Configuracoes() {
   const { users, isLoading, updateRole, updateCanOpenCaixa, deleteAccess, isUpdating, isDeleting } = useUserAccess();
   const { cardBrands, isLoading: isLoadingBrands, createCardBrand, updateCardBrand, deleteCardBrand, isCreating: isCreatingBrand, isUpdating: isUpdatingBrand, isDeleting: isDeletingBrand } = useCardBrands();
   const { bankAccounts, isLoading: isLoadingBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount } = useBankAccounts();
-  const { accessLevels, isLoading: isLoadingAccessLevels, createAccessLevel, updateAccessLevel, updatePermission, deleteAccessLevel, isCreating: isCreatingAccessLevel, isUpdating: isUpdatingAccessLevel, isDeleting: isDeletingAccessLevel } = useAccessLevels();
+  const { accessLevels, isLoading: isLoadingAccessLevels, error: accessLevelsError, createAccessLevel, updateAccessLevel, updatePermission, deleteAccessLevel, isCreating: isCreatingAccessLevel, isUpdating: isUpdatingAccessLevel, isDeleting: isDeletingAccessLevel } = useAccessLevels();
 
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -903,10 +903,24 @@ export default function Configuracoes() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {isLoadingAccessLevels ? (
+                  {accessLevelsError ? (
+                    <div className="text-center py-8 text-destructive">
+                      Erro ao carregar grupos: {(accessLevelsError as Error).message}
+                      <br />
+                      <Button variant="outline" size="sm" className="mt-2" onClick={() => queryClient.invalidateQueries({ queryKey: ["access-levels"] })}>
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  ) : isLoadingAccessLevels ? (
                     <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                   ) : accessLevels.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">Nenhum grupo de acesso configurado.</div>
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhum grupo de acesso configurado.
+                      <br />
+                      <Button variant="outline" size="sm" className="mt-2" onClick={() => queryClient.invalidateQueries({ queryKey: ["access-levels"] })}>
+                        Recarregar
+                      </Button>
+                    </div>
                   ) : (
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
