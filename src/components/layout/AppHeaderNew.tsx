@@ -67,7 +67,7 @@ export function AppHeaderNew() {
       {/* Logo and Salon Name */}
       <div className="flex items-center gap-2 md:gap-4">
         <button 
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
           <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg md:text-xl">
