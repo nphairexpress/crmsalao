@@ -121,7 +121,7 @@ export function useAppointments(date?: Date) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments", salonId] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: "Agendamento removido com sucesso!" });
     },
     onError: (error: Error) => {
