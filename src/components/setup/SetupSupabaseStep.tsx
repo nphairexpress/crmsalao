@@ -95,7 +95,7 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
         </div>
 
         {connectionStatus === "success" && (
-          <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
+          <div className="flex items-center gap-2 text-primary text-sm font-medium">
             <CheckCircle2 className="h-4 w-4" /> Conexão OK
           </div>
         )}

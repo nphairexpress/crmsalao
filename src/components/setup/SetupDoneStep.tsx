@@ -5,7 +5,7 @@ export default function SetupDoneStep() {
   return (
     <Card className="text-center py-12">
       <CardContent className="space-y-4">
-        <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
+        <CheckCircle2 className="h-16 w-16 mx-auto text-primary" />
         <h2 className="text-2xl font-bold">Instalação Concluída! 🎉</h2>
         <p className="text-muted-foreground">
           O banco de dados foi configurado e o redeploy foi iniciado na Vercel.
