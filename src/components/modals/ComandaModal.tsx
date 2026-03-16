@@ -721,6 +721,21 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         }
       }
 
+      // Save underpayment as client debt
+      if (saveUnderpaymentAsDebt && difference > 0.01 && comanda.client_id) {
+        try {
+          await supabase.from("client_debts" as any).insert({
+            salon_id: salonId,
+            client_id: comanda.client_id,
+            comanda_id: comanda.id,
+            debt_amount: Math.round(difference * 100) / 100,
+            notes: `Dívida da comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
+          });
+        } catch (debtError) {
+          console.error("Erro ao salvar dívida:", debtError);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
       queryClient.invalidateQueries({ queryKey: ["products", salonId] });
       queryClient.invalidateQueries({ queryKey: ["client-credits"] });
