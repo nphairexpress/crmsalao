@@ -53,6 +53,7 @@ import { AvatarUpload } from "@/components/shared/AvatarUpload";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSchedulingSettings, SchedulingSettings } from "@/hooks/useSchedulingSettings";
 
 const SPECIALTIES = [
   { value: "cabeleireiro", label: "Cabeleireiro(a)" },
