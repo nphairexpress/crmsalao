@@ -26,90 +26,77 @@ export interface AccessLevelWithPermissions extends AccessLevel {
   permissions: Record<string, boolean>;
 }
 
+// AVEC-style: each feature has up to 4 action columns
+export const PERMISSION_ACTIONS = [
+  { key: "view", label: "Visualizar" },
+  { key: "edit", label: "Editar" },
+  { key: "delete", label: "Excluir" },
+  { key: "view_others", label: "Ver de outros prof." },
+] as const;
+
+export type PermissionAction = typeof PERMISSION_ACTIONS[number]["key"];
+
+export interface PermissionFeature {
+  key: string;
+  label: string;
+  actions: PermissionAction[];
+}
+
+// AVEC-style feature list with available actions per feature
+export const PERMISSION_FEATURES: PermissionFeature[] = [
+  { key: "agenda", label: "Agenda", actions: ["view", "edit", "delete", "view_others"] },
+  { key: "agenda_bloqueios", label: "Agenda Bloqueios", actions: ["view", "edit", "delete"] },
+  { key: "caixas", label: "Caixas", actions: ["view", "edit", "delete"] },
+  { key: "clientes_dados", label: "Clientes Dados", actions: ["view", "edit", "delete"] },
+  { key: "clientes_historico", label: "Clientes Histórico", actions: ["view"] },
+  { key: "comandas", label: "Comandas", actions: ["view", "edit", "delete"] },
+  { key: "comandas_comissao", label: "Comandas (Comissão dos itens)", actions: ["edit"] },
+  { key: "comandas_estorno", label: "Comandas (Estornar pagamentos)", actions: ["edit"] },
+  { key: "comandas_itens", label: "Comandas (Itens das comandas)", actions: ["edit", "delete", "view_others"] },
+  { key: "comandas_valores", label: "Comandas (Valor dos itens)", actions: ["edit"] },
+  { key: "comissoes", label: "Comissões", actions: ["view", "edit"] },
+  { key: "creditos_debitos", label: "Créditos e Débitos de Clientes", actions: ["edit", "delete"] },
+  { key: "dashboard", label: "Dashboard", actions: ["view"] },
+  { key: "debito_troco", label: "Débito/Troco na Comanda", actions: ["edit"] },
+  { key: "entradas_saidas", label: "Entradas e Saídas", actions: ["view", "edit", "delete"] },
+  { key: "estoque_produtos", label: "Estoque (Produtos)", actions: ["view", "edit", "delete"] },
+  { key: "estoque_entrada_saida", label: "Estoque (Registrar Entrada/Saída)", actions: ["edit"] },
+  { key: "grupo_acessos", label: "Grupo de Acessos", actions: ["view", "edit", "delete"] },
+  { key: "historico_caixas", label: "Histórico de Caixas", actions: ["view", "edit", "delete"] },
+  { key: "historico_comandas", label: "Histórico de Comandas", actions: ["view"] },
+  { key: "informacoes", label: "Informações", actions: ["view", "edit", "delete"] },
+  { key: "profissionais", label: "Profissionais", actions: ["view", "edit", "delete"] },
+  { key: "relatorios", label: "Relatórios", actions: ["view", "view_others"] },
+  { key: "servicos", label: "Serviços", actions: ["view", "edit", "delete"] },
+];
+
+// Legacy mapping - keep for backward compatibility
 export const PERMISSION_CATEGORIES = {
   dashboard: { label: "Dashboard", permissions: ["dashboard.view"] },
-  agenda: { 
-    label: "Agenda", 
-    permissions: ["agenda.view", "agenda.create", "agenda.edit", "agenda.delete"] 
-  },
-  clients: { 
-    label: "Clientes", 
-    permissions: ["clients.view", "clients.create", "clients.edit", "clients.delete"] 
-  },
-  comandas: { 
-    label: "Comandas", 
-    permissions: ["comandas.view", "comandas.create", "comandas.edit", "comandas.delete"] 
-  },
-  professionals: { 
-    label: "Profissionais", 
-    permissions: ["professionals.view", "professionals.create", "professionals.edit", "professionals.delete"] 
-  },
-  services: { 
-    label: "Serviços", 
-    permissions: ["services.view", "services.create", "services.edit", "services.delete"] 
-  },
-  products: { 
-    label: "Produtos/Estoque", 
-    permissions: ["products.view", "products.create", "products.edit", "products.delete"] 
-  },
-  financial: { 
-    label: "Financeiro", 
-    permissions: ["financial.view", "financial.create", "financial.edit", "financial.delete"] 
-  },
-  caixa: { 
-    label: "Caixa", 
-    permissions: ["caixa.view", "caixa.open", "caixa.close", "caixa.edit"] 
-  },
-  commissions: { 
-    label: "Comissões", 
-    permissions: ["commissions.view", "commissions.edit"] 
-  },
-  settings: { 
-    label: "Configurações", 
-    permissions: ["settings.view", "settings.edit", "settings.users"] 
-  },
+  agenda: { label: "Agenda", permissions: ["agenda.view", "agenda.edit", "agenda.delete", "agenda.view_others"] },
+  clients: { label: "Clientes", permissions: ["clientes_dados.view", "clientes_dados.edit", "clientes_dados.delete"] },
+  comandas: { label: "Comandas", permissions: ["comandas.view", "comandas.edit", "comandas.delete"] },
+  professionals: { label: "Profissionais", permissions: ["profissionais.view", "profissionais.edit", "profissionais.delete"] },
+  services: { label: "Serviços", permissions: ["servicos.view", "servicos.edit", "servicos.delete"] },
+  products: { label: "Produtos/Estoque", permissions: ["estoque_produtos.view", "estoque_produtos.edit", "estoque_produtos.delete"] },
+  financial: { label: "Financeiro", permissions: ["entradas_saidas.view", "entradas_saidas.edit", "entradas_saidas.delete"] },
+  caixa: { label: "Caixa", permissions: ["caixas.view", "caixas.edit", "caixas.delete"] },
+  commissions: { label: "Comissões", permissions: ["comissoes.view", "comissoes.edit"] },
+  settings: { label: "Configurações", permissions: ["informacoes.view", "informacoes.edit", "grupo_acessos.view"] },
 };
 
-export const PERMISSION_LABELS: Record<string, string> = {
-  "dashboard.view": "Visualizar",
-  "agenda.view": "Visualizar",
-  "agenda.create": "Criar",
-  "agenda.edit": "Editar",
-  "agenda.delete": "Excluir",
-  "clients.view": "Visualizar",
-  "clients.create": "Criar",
-  "clients.edit": "Editar",
-  "clients.delete": "Excluir",
-  "comandas.view": "Visualizar",
-  "comandas.create": "Criar",
-  "comandas.edit": "Editar",
-  "comandas.delete": "Excluir",
-  "professionals.view": "Visualizar",
-  "professionals.create": "Criar",
-  "professionals.edit": "Editar",
-  "professionals.delete": "Excluir",
-  "services.view": "Visualizar",
-  "services.create": "Criar",
-  "services.edit": "Editar",
-  "services.delete": "Excluir",
-  "products.view": "Visualizar",
-  "products.create": "Criar",
-  "products.edit": "Editar",
-  "products.delete": "Excluir",
-  "financial.view": "Visualizar",
-  "financial.create": "Criar",
-  "financial.edit": "Editar",
-  "financial.delete": "Excluir",
-  "caixa.view": "Visualizar",
-  "caixa.open": "Abrir",
-  "caixa.close": "Fechar",
-  "caixa.edit": "Editar",
-  "commissions.view": "Visualizar",
-  "commissions.edit": "Editar",
-  "settings.view": "Visualizar",
-  "settings.edit": "Editar",
-  "settings.users": "Gerenciar Usuários",
-};
+export const PERMISSION_LABELS: Record<string, string> = {};
+// Generate labels from features
+PERMISSION_FEATURES.forEach(f => {
+  PERMISSION_ACTIONS.forEach(a => {
+    PERMISSION_LABELS[`${f.key}.${a.key}`] = `${f.label} - ${a.label}`;
+  });
+});
+
+// Get all possible permission keys
+export function getAllPermissionKeys(): string[] {
+  return PERMISSION_FEATURES.flatMap(f => f.actions.map(a => `${f.key}.${a}`));
+}
 
 export function useAccessLevels() {
   const { salonId } = useAuth();
@@ -124,14 +111,13 @@ export function useAccessLevels() {
       const { data: levels, error: levelsError } = await supabase
         .from("access_levels")
         .select("*")
-        .eq("salon_id", salonId)
+        .or(`salon_id.eq.${salonId},salon_id.is.null`)
         .order("is_system", { ascending: false })
         .order("name");
 
       if (levelsError) throw levelsError;
       if (!levels || levels.length === 0) return [];
 
-      // Get permissions for all levels
       const levelIds = levels.map(l => l.id);
       const { data: permissions, error: permError } = await supabase
         .from("access_level_permissions")
@@ -140,7 +126,6 @@ export function useAccessLevels() {
 
       if (permError) throw permError;
 
-      // Combine data
       const levelsWithPermissions: AccessLevelWithPermissions[] = levels.map(level => {
         const levelPerms = permissions?.filter(p => p.access_level_id === level.id) || [];
         const permissionsMap: Record<string, boolean> = {};
@@ -150,6 +135,7 @@ export function useAccessLevels() {
 
         return {
           ...level,
+          color: level.color || "#6366f1",
           permissions: permissionsMap,
         };
       });
@@ -178,7 +164,7 @@ export function useAccessLevels() {
       if (error) throw error;
 
       // Initialize all permissions as false
-      const allPermissions = Object.values(PERMISSION_CATEGORIES).flatMap(cat => cat.permissions);
+      const allPermissions = getAllPermissionKeys();
       const permInserts = allPermissions.map(key => ({
         access_level_id: newLevel.id,
         permission_key: key,
@@ -209,12 +195,10 @@ export function useAccessLevels() {
   const updateAccessLevelMutation = useMutation({
     mutationFn: async (data: { id: string; name?: string; description?: string; color?: string }) => {
       const { id, ...updateData } = data;
-
       const { error } = await supabase
         .from("access_levels")
         .update(updateData)
         .eq("id", id);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -232,13 +216,31 @@ export function useAccessLevels() {
 
   const updatePermissionMutation = useMutation({
     mutationFn: async (data: { accessLevelId: string; permissionKey: string; enabled: boolean }) => {
-      const { error } = await supabase
+      // Try update first, if no rows affected, insert
+      const { data: existing } = await supabase
         .from("access_level_permissions")
-        .update({ enabled: data.enabled })
+        .select("id")
         .eq("access_level_id", data.accessLevelId)
-        .eq("permission_key", data.permissionKey);
+        .eq("permission_key", data.permissionKey)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existing) {
+        const { error } = await supabase
+          .from("access_level_permissions")
+          .update({ enabled: data.enabled })
+          .eq("access_level_id", data.accessLevelId)
+          .eq("permission_key", data.permissionKey);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("access_level_permissions")
+          .insert({
+            access_level_id: data.accessLevelId,
+            permission_key: data.permissionKey,
+            enabled: data.enabled,
+          });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["access-levels", salonId] });
@@ -258,7 +260,6 @@ export function useAccessLevels() {
         .from("access_levels")
         .delete()
         .eq("id", id);
-
       if (error) throw error;
     },
     onSuccess: () => {
