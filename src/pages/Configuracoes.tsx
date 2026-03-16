@@ -1007,7 +1007,7 @@ export default function Configuracoes() {
                       <CardTitle className="text-lg">Grupos de Acessos</CardTitle>
                       <CardDescription>Configure os grupos de acesso e suas permissões para os profissionais.</CardDescription>
                     </div>
-                    {isMaster && (
+                    {canManageAccess && (
                       <Button onClick={() => setCreateAccessLevelModalOpen(true)} className="gap-2">
                         <Plus className="h-4 w-4" /> Adicionar grupo
                       </Button>
