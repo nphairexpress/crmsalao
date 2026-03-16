@@ -919,10 +919,11 @@ export default function Configuracoes() {
                         </TableHeader>
                         <TableBody>
                           {accessLevels.map((level) => {
-                            // Count users with this access level
+                            // Count users with this access level by matching system_key to role, or access_level_id
                             const profCount = users.filter(u => {
-                              // We'll show count from user data if available
-                              return false; // Will be enhanced later
+                              // Match by system_key → role mapping
+                              if (level.system_key && level.system_key === u.role) return true;
+                              return false;
                             }).length;
 
                             return (
