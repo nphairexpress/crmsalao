@@ -82,7 +82,10 @@ export function TopNavigation() {
   const activeNavItem = navItems.find(item => {
     if (location.pathname === item.url) return true;
     if (item.subItems) {
-      return item.subItems.some(sub => location.pathname.startsWith(sub.url));
+      return item.subItems.some(sub => {
+        const subUrl = sub.url.split("?")[0];
+        return location.pathname === subUrl || location.pathname.startsWith(subUrl + "/");
+      });
     }
     return location.pathname.startsWith(item.url);
   });
