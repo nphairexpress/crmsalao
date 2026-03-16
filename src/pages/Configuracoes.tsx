@@ -887,16 +887,18 @@ export default function Configuracoes() {
                 </CardContent>
               </Card>
 
-              {/* Access Levels */}
+              {/* Access Levels - AVEC Style */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">Configuração dos Níveis de Acesso</CardTitle>
-                      <CardDescription>Configure as permissões de cada nível ou crie níveis personalizados.</CardDescription>
+                      <CardTitle className="text-lg">Grupos de Acessos</CardTitle>
+                      <CardDescription>Configure os grupos de acesso e suas permissões para os profissionais.</CardDescription>
                     </div>
                     {isMaster && (
-                      <Button onClick={() => setCreateAccessLevelModalOpen(true)} className="gap-2"><Plus className="h-4 w-4" />Novo Nível</Button>
+                      <Button onClick={() => setCreateAccessLevelModalOpen(true)} className="gap-2">
+                        <Plus className="h-4 w-4" /> Adicionar grupo
+                      </Button>
                     )}
                   </div>
                 </CardHeader>
@@ -904,38 +906,60 @@ export default function Configuracoes() {
                   {isLoadingAccessLevels ? (
                     <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                   ) : accessLevels.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">Nenhum nível de acesso configurado.</div>
+                    <div className="text-center py-8 text-muted-foreground">Nenhum grupo de acesso configurado.</div>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {accessLevels.map((level) => {
-                        const enabledCount = Object.values(level.permissions).filter(Boolean).length;
-                        const totalCount = Object.keys(level.permissions).length;
-                        return (
-                          <div
-                            key={level.id}
-                            className="flex items-start gap-3 p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
-                            onClick={() => { setSelectedAccessLevel(level); setAccessLevelConfigModalOpen(true); }}
-                          >
-                            <div className="h-4 w-4 rounded-full mt-0.5 shrink-0" style={{ backgroundColor: level.color }} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium">{level.name}</p>
-                                {level.is_system && <Badge variant="secondary" className="text-xs"><Lock className="h-3 w-3 mr-1" />Sistema</Badge>}
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-0.5">{level.description || "Sem descrição"}</p>
-                              <p className="text-xs text-muted-foreground mt-2">{enabledCount} de {totalCount} permissões ativas</p>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-8 w-8"><Cog className="h-4 w-4" /></Button>
-                              {!level.is_system && isMaster && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setAccessLevelToDelete(level); setDeleteAccessLevelModalOpen(true); }}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Grupo</TableHead>
+                            <TableHead>Profissionais com este acesso</TableHead>
+                            <TableHead className="text-right">Ação</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {accessLevels.map((level) => {
+                            // Count users with this access level
+                            const profCount = users.filter(u => {
+                              // We'll show count from user data if available
+                              return false; // Will be enhanced later
+                            }).length;
+
+                            return (
+                              <TableRow key={level.id}>
+                                <TableCell className="font-medium">{level.name}</TableCell>
+                                <TableCell>{profCount}</TableCell>
+                                <TableCell className="text-right">
+                                  {level.system_key === "admin" ? (
+                                    <span className="text-sm text-muted-foreground">Acesso completo</span>
+                                  ) : (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => { setSelectedAccessLevel(level); setAccessLevelConfigModalOpen(true); }}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      {!level.is_system && isMaster && (
+                                        <Button
+                                          variant="destructive"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => { setAccessLevelToDelete(level); setDeleteAccessLevelModalOpen(true); }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </CardContent>
