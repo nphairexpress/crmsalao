@@ -50,6 +50,7 @@ import { TransferMasterModal } from "@/components/modals/TransferMasterModal";
 import { AccessLevelConfigModal } from "@/components/settings/AccessLevelConfigModal";
 import { CreateAccessLevelModal } from "@/components/settings/CreateAccessLevelModal";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
+import { SalonInfoForm } from "@/components/settings/SalonInfoForm";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
