@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { useProfessionals } from "@/hooks/useProfessionals";
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
 import { useSchedulingSettings } from "@/hooks/useSchedulingSettings";
+import { useAllProfessionalSchedules } from "@/hooks/useAllProfessionalSchedules";
 import { AppointmentModal } from "@/components/modals/AppointmentModal";
 import { BlockTimeModal, BlockTimeData } from "@/components/modals/BlockTimeModal";
 import { AppointmentHoverCard } from "@/components/agenda/AppointmentHoverCard";
