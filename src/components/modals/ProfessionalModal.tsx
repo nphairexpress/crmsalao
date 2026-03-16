@@ -20,6 +20,7 @@ import {
 import { Professional, ProfessionalInput } from "@/hooks/useProfessionals";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
 import type { AppRole } from "@/contexts/AuthContext";
+import { useAccessLevels } from "@/hooks/useAccessLevels";
 
 interface ProfessionalModalProps {
   open: boolean;
@@ -42,15 +43,12 @@ const SPECIALTIES = [
   { value: "outro", label: "Outro" },
 ];
 
-// Níveis de acesso do sistema
-const ACCESS_LEVELS: { value: AppRole; label: string; description: string }[] = [
-  { value: "professional", label: "Profissional", description: "Acesso básico: visualiza agenda pessoal e comandas" },
-  { value: "receptionist", label: "Recepcionista", description: "Agenda, clientes, comandas e caixa" },
-  { value: "financial", label: "Financeiro", description: "Relatórios financeiros, caixa e comandas" },
-  { value: "manager", label: "Gerente", description: "Acesso completo exceto configurações do salão" },
-];
-
 export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, isLoading }: ProfessionalModalProps) {
+  const { accessLevels, isLoading: isLoadingAccessLevels } = useAccessLevels();
+  const accessLevelOptions = accessLevels.filter(
+    (level) => level.system_key && level.system_key !== "admin"
+  );
+
   const [formData, setFormData] = useState<ProfessionalInput>({
     name: "",
     nickname: "",
@@ -66,6 +64,7 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
     create_access: false,
     avatar_url: null,
     access_level: "professional" as AppRole,
+    access_level_id: undefined,
   });
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -90,6 +89,8 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
         has_schedule: (professional as any).has_schedule ?? true,
         create_access: (professional as any).create_access || false,
         avatar_url: professional.avatar_url || null,
+        access_level: "professional" as AppRole,
+        access_level_id: undefined,
       });
       setPassword("");
       setConfirmPassword("");
@@ -110,6 +111,7 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
         create_access: false,
         avatar_url: null,
         access_level: "professional" as AppRole,
+        access_level_id: undefined,
       });
       setPassword("");
       setConfirmPassword("");
@@ -117,11 +119,23 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
     }
   }, [professional, open]);
 
+  useEffect(() => {
+    if (!open || professional || accessLevelOptions.length === 0 || formData.access_level_id) return;
+
+    const defaultLevel = accessLevelOptions.find((level) => level.system_key === "professional") || accessLevelOptions[0];
+    if (!defaultLevel?.system_key) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      access_level: defaultLevel.system_key as AppRole,
+      access_level_id: defaultLevel.id,
+    }));
+  }, [open, professional, accessLevelOptions, formData.access_level_id]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError("");
 
-    // Validate password if creating access
     if (formData.create_access && !hasExistingAccess) {
       if (!password) {
         setPasswordError("Informe uma senha para o acesso");
@@ -137,6 +151,10 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
       }
       if (!formData.email) {
         setPasswordError("Informe um email para criar o acesso");
+        return;
+      }
+      if (!formData.access_level_id || !formData.access_level) {
+        setPasswordError("Selecione um grupo de acesso válido");
         return;
       }
     }
@@ -160,7 +178,6 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Avatar Upload */}
           <div className="flex justify-center">
             <AvatarUpload
               currentAvatarUrl={formData.avatar_url}
@@ -171,7 +188,6 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
             />
           </div>
 
-          {/* Row 1: Nome e Apelido */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">
@@ -196,7 +212,6 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
             </div>
           </div>
 
-          {/* Row 2: CPF e Especialidade */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cpf">
@@ -231,7 +246,6 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
             </div>
           </div>
 
-          {/* Row 3: Email e Telefone */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">
@@ -256,7 +270,6 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
             </div>
           </div>
 
-          {/* Checkboxes */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -300,30 +313,42 @@ export function ProfessionalModal({ open, onOpenChange, professional, onSubmit, 
                     <p className="text-sm text-muted-foreground">
                       O profissional poderá acessar o sistema com o email e senha definidos abaixo.
                     </p>
-                    
-                    {/* Nível de Acesso */}
+
                     <div className="space-y-2">
                       <Label htmlFor="access_level">
                         Nível de Acesso <span className="text-destructive">*</span>
                       </Label>
                       <Select
-                        value={formData.access_level}
-                        onValueChange={(value) => setFormData({ ...formData, access_level: value as AppRole })}
+                        value={formData.access_level_id}
+                        onValueChange={(value) => {
+                          const selectedLevel = accessLevelOptions.find((level) => level.id === value);
+                          setFormData((prev) => ({
+                            ...prev,
+                            access_level_id: value,
+                            access_level: (selectedLevel?.system_key as AppRole | undefined) || prev.access_level || "professional",
+                          }));
+                        }}
+                        disabled={isLoadingAccessLevels || accessLevelOptions.length === 0}
                       >
                         <SelectTrigger id="access_level">
-                          <SelectValue placeholder="Selecione o nível de acesso" />
+                          <SelectValue placeholder={isLoadingAccessLevels ? "Carregando grupos..." : "Selecione o nível de acesso"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {ACCESS_LEVELS.map((level) => (
-                            <SelectItem key={level.value} value={level.value}>
+                          {accessLevelOptions.map((level) => (
+                            <SelectItem key={level.id} value={level.id}>
                               <div className="flex flex-col">
-                                <span className="font-medium">{level.label}</span>
-                                <span className="text-xs text-muted-foreground">{level.description}</span>
+                                <span className="font-medium">{level.name}</span>
+                                {level.description && (
+                                  <span className="text-xs text-muted-foreground">{level.description}</span>
+                                )}
                               </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {!isLoadingAccessLevels && accessLevelOptions.length === 0 && (
+                        <p className="text-sm text-destructive">Nenhum grupo de acesso encontrado para este salão.</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

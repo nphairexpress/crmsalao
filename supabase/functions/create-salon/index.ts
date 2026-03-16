@@ -8,8 +8,91 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const seedDefaultAccessLevels = async (adminClient: any, salonId: string) => {
+  const { data: templateLevels, error: templateLevelsError } = await adminClient
+    .from("access_levels")
+    .select("id, name, description, system_key, color, created_at")
+    .eq("is_system", true)
+    .not("system_key", "is", null)
+    .order("created_at", { ascending: true });
+
+  if (templateLevelsError) {
+    throw new Error(`Failed loading access level templates: ${templateLevelsError.message}`);
+  }
+
+  const templateLevelMap = new Map<string, any>();
+  for (const level of templateLevels ?? []) {
+    if (level.system_key && !templateLevelMap.has(level.system_key)) {
+      templateLevelMap.set(level.system_key, level);
+    }
+  }
+
+  const uniqueTemplateLevels = Array.from(templateLevelMap.values());
+  if (uniqueTemplateLevels.length === 0) {
+    return { adminAccessLevelId: null as string | null };
+  }
+
+  const templateIds = uniqueTemplateLevels.map((level) => level.id);
+  const { data: templatePermissions, error: templatePermissionsError } = await adminClient
+    .from("access_level_permissions")
+    .select("access_level_id, permission_key, enabled")
+    .in("access_level_id", templateIds);
+
+  if (templatePermissionsError) {
+    throw new Error(`Failed loading access level permissions: ${templatePermissionsError.message}`);
+  }
+
+  const { data: insertedLevels, error: insertedLevelsError } = await adminClient
+    .from("access_levels")
+    .insert(
+      uniqueTemplateLevels.map((level) => ({
+        salon_id: salonId,
+        name: level.name,
+        description: level.description,
+        is_system: true,
+        system_key: level.system_key,
+        color: level.color,
+      }))
+    )
+    .select("id, system_key");
+
+  if (insertedLevelsError || !insertedLevels) {
+    throw new Error(`Failed creating default access levels: ${insertedLevelsError?.message ?? "unknown error"}`);
+  }
+
+  const permissionsByTemplateId = new Map<string, Array<{ permission_key: string; enabled: boolean }>>();
+  for (const permission of templatePermissions ?? []) {
+    const existing = permissionsByTemplateId.get(permission.access_level_id) ?? [];
+    existing.push({ permission_key: permission.permission_key, enabled: permission.enabled });
+    permissionsByTemplateId.set(permission.access_level_id, existing);
+  }
+
+  const permissionInserts = insertedLevels.flatMap((insertedLevel: any) => {
+    const templateLevel = uniqueTemplateLevels.find((level) => level.system_key === insertedLevel.system_key);
+    if (!templateLevel) return [];
+
+    return (permissionsByTemplateId.get(templateLevel.id) ?? []).map((permission) => ({
+      access_level_id: insertedLevel.id,
+      permission_key: permission.permission_key,
+      enabled: permission.enabled,
+    }));
+  });
+
+  if (permissionInserts.length > 0) {
+    const { error: permissionInsertError } = await adminClient
+      .from("access_level_permissions")
+      .insert(permissionInserts);
+
+    if (permissionInsertError) {
+      throw new Error(`Failed creating default permissions: ${permissionInsertError.message}`);
+    }
+  }
+
+  const adminAccessLevelId = insertedLevels.find((level: any) => level.system_key === "admin")?.id ?? null;
+  return { adminAccessLevelId };
+};
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,7 +110,6 @@ Deno.serve(async (req) => {
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate user via anon client + provided JWT
     const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
@@ -59,7 +141,6 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Idempotency: if profile already exists, return its salon_id
     const { data: existingProfile, error: existingProfileError } = await adminClient
       .from("profiles")
       .select("salon_id")
@@ -81,7 +162,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create salon
     const { data: salon, error: salonError } = await adminClient
       .from("salons")
       .insert({ name: salonName })
@@ -96,7 +176,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create profile
     const { error: profileError } = await adminClient.from("profiles").insert({
       user_id: user.id,
       salon_id: salon.id,
@@ -111,12 +190,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create admin role
-    const { error: roleError } = await adminClient.from("user_roles").insert({
+    let adminAccessLevelId: string | null = null;
+    try {
+      const seeded = await seedDefaultAccessLevels(adminClient, salon.id);
+      adminAccessLevelId = seeded.adminAccessLevelId;
+    } catch (seedError) {
+      console.error("create-salon: failed seeding default access levels", seedError);
+    }
+
+    const rolePayload: Record<string, unknown> = {
       user_id: user.id,
       salon_id: salon.id,
       role: "admin",
-    });
+    };
+
+    if (adminAccessLevelId) {
+      rolePayload.access_level_id = adminAccessLevelId;
+    }
+
+    const { error: roleError } = await adminClient.from("user_roles").insert(rolePayload);
 
     if (roleError) {
       console.error("create-salon: failed creating role", roleError);

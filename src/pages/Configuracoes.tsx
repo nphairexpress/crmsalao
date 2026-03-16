@@ -360,7 +360,8 @@ export default function Configuracoes() {
   // Handlers
   const handleRoleChange = (userId: string, newRole: AppRole) => {
     if (!isMaster) { toast({ title: "Acesso negado", description: "Apenas o usuário master pode alterar permissões.", variant: "destructive" }); return; }
-    updateRole({ userId, newRole });
+    const matchingAccessLevel = accessLevels.find((level) => level.system_key === newRole) ?? null;
+    updateRole({ userId, newRole, accessLevelId: matchingAccessLevel?.id ?? null });
   };
 
   const handleToggleCanOpenCaixa = (userId: string, currentValue: boolean) => {
@@ -933,10 +934,9 @@ export default function Configuracoes() {
                         </TableHeader>
                         <TableBody>
                           {accessLevels.map((level) => {
-                            // Count users with this access level by matching system_key to role, or access_level_id
-                            const profCount = users.filter(u => {
-                              // Match by system_key → role mapping
-                              if (level.system_key && level.system_key === u.role) return true;
+                            const profCount = users.filter((u) => {
+                              if (u.access_level_id === level.id) return true;
+                              if (!u.access_level_id && level.system_key && level.system_key === u.role) return true;
                               return false;
                             }).length;
 
