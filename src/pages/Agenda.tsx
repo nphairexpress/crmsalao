@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { AppLayoutNew } from "@/components/layout/AppLayoutNew";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { useProfessionals } from "@/hooks/useProfessionals";
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
 import { useSchedulingSettings } from "@/hooks/useSchedulingSettings";
+import { useAllProfessionalSchedules } from "@/hooks/useAllProfessionalSchedules";
 import { AppointmentModal } from "@/components/modals/AppointmentModal";
 import { BlockTimeModal, BlockTimeData } from "@/components/modals/BlockTimeModal";
 import { AppointmentHoverCard } from "@/components/agenda/AppointmentHoverCard";
@@ -76,6 +77,44 @@ export default function Agenda() {
   const { clients, createClient } = useClients();
   const { services } = useServices();
   const { settings: schedulingSettings } = useSchedulingSettings();
+  const { scheduleMap } = useAllProfessionalSchedules();
+
+  // Salon working days array [sun, mon, tue, wed, thu, fri, sat]
+  const salonWorkDays = useMemo(() => [
+    schedulingSettings.sunday,
+    schedulingSettings.monday,
+    schedulingSettings.tuesday,
+    schedulingSettings.wednesday,
+    schedulingSettings.thursday,
+    schedulingSettings.friday,
+    schedulingSettings.saturday,
+  ], [schedulingSettings]);
+
+  // Check if a date is a salon working day
+  const isSalonWorkDay = useCallback((date: Date) => {
+    return salonWorkDays[date.getDay()];
+  }, [salonWorkDays]);
+
+  // Check if a professional works on a given day and time
+  const isProfessionalAvailable = useCallback((professionalId: string, dayOfWeek: number, timeSlot: string) => {
+    const profSchedules = scheduleMap[professionalId];
+    // If no schedule configured, assume available during salon hours
+    if (!profSchedules || profSchedules.length === 0) return true;
+
+    return profSchedules.some((schedule) => {
+      // Check if this day is enabled
+      if (!schedule.days[dayOfWeek]) return false;
+
+      // Check if time is within range
+      const slotMinutes = parseInt(timeSlot.split(":")[0]) * 60 + parseInt(timeSlot.split(":")[1]);
+      const startParts = schedule.start_time.split(":");
+      const endParts = schedule.end_time.split(":");
+      const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+      const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+
+      return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+    });
+  }, [scheduleMap]);
 
   const timeSlots = useMemo(() => generateTimeSlots(
     schedulingSettings.opening_time,
@@ -259,6 +298,7 @@ export default function Agenda() {
               mode="single"
               selected={currentDate}
               onSelect={(date) => date && setCurrentDate(date)}
+              disabled={(date) => !salonWorkDays[date.getDay()]}
               locale={ptBR}
               month={currentDate}
               onMonthChange={setCurrentDate}
@@ -489,6 +529,17 @@ export default function Agenda() {
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
+            ) : !isSalonWorkDay(currentDate) ? (
+              <div className="text-center py-20 text-muted-foreground">
+                <Ban className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">Salão fechado neste dia</p>
+                <p className="text-sm">
+                  {currentDate.toLocaleDateString("pt-BR", { weekday: "long" })} não é um dia de funcionamento.
+                </p>
+                <Button variant="outline" className="mt-4" onClick={goToToday}>
+                  Ir para Hoje
+                </Button>
+              </div>
             ) : filteredProfessionals.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground">
                 <p className="mb-4">Nenhum profissional cadastrado para exibir na agenda.</p>
@@ -541,12 +592,19 @@ export default function Agenda() {
                         {/* Professional Columns */}
                         {filteredProfessionals.map((professional) => {
                           const slotAppointments = getAppointmentsAtSlot(professional.id, time);
+                          const dayOfWeek = currentDate.getDay();
+                          const available = isProfessionalAvailable(professional.id, dayOfWeek, time);
 
                           return (
                             <div
                               key={`${professional.id}-${time}`}
-                              className="relative border-r border-border/30 last:border-r-0 h-[36px] hover:bg-primary/5 transition-colors cursor-pointer"
-                              onClick={() => handleSlotClick(professional.id, time)}
+                              className={cn(
+                                "relative border-r border-border/30 last:border-r-0 h-[36px] transition-colors",
+                                available
+                                  ? "hover:bg-primary/5 cursor-pointer"
+                                  : "bg-muted/40 cursor-not-allowed"
+                              )}
+                              onClick={() => available && handleSlotClick(professional.id, time)}
                             >
                               {slotAppointments.length > 0 && (
                                 <div className="absolute inset-0 flex gap-px p-px z-10">
