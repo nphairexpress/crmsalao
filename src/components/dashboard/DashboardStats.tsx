@@ -155,31 +155,31 @@ export function DashboardStats() {
 
   const stats = [
     {
-      title: "Faturamento Hoje",
-      value: formatCurrency(data?.todayRevenue ?? 0),
+      title: "Faturamento do Mês",
+      value: formatCurrency(data?.monthRevenue ?? 0),
       change: data?.revenueChange ?? 0,
-      changeLabel: "vs ontem",
+      changeLabel: "vs mês anterior",
       icon: <DollarSign className="h-6 w-6" />,
     },
     {
-      title: "Atendimentos Hoje",
-      value: String(data?.todayAppts ?? 0),
+      title: "Atendimentos do Mês",
+      value: String(data?.monthAppts ?? 0),
       change: data?.apptsChange ?? 0,
-      changeLabel: "vs ontem",
+      changeLabel: "vs mês anterior",
       icon: <Calendar className="h-6 w-6" />,
     },
     {
       title: "Ticket Médio",
-      value: formatCurrency(data?.weekTicket ?? 0),
+      value: formatCurrency(data?.monthTicket ?? 0),
       change: data?.ticketChange ?? 0,
-      changeLabel: "vs semana",
+      changeLabel: "vs mês anterior",
       icon: <TrendingUp className="h-6 w-6" />,
     },
     {
       title: "Novos Clientes",
       value: String(data?.newClients ?? 0),
       change: data?.clientsChange ?? 0,
-      changeLabel: "vs ontem",
+      changeLabel: "vs mês anterior",
       icon: <Users className="h-6 w-6" />,
     },
   ];
