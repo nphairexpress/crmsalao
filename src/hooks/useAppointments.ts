@@ -86,7 +86,8 @@ export function useAppointments(date?: Date) {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments", salonId] });
+      // Invalidate all appointment queries regardless of date
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: "Agendamento criado com sucesso!" });
     },
     onError: (error: Error) => {
@@ -106,7 +107,7 @@ export function useAppointments(date?: Date) {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments", salonId] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: "Agendamento atualizado com sucesso!" });
     },
     onError: (error: Error) => {
@@ -120,7 +121,7 @@ export function useAppointments(date?: Date) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments", salonId] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: "Agendamento removido com sucesso!" });
     },
     onError: (error: Error) => {

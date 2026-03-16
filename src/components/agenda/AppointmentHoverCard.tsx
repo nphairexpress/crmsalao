@@ -23,12 +23,14 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusBadgeColors: Record<string, string> = {
-  scheduled: "bg-red-500 hover:bg-red-500",
-  confirmed: "bg-green-500 hover:bg-green-500",
-  in_progress: "bg-amber-500 hover:bg-amber-500",
-  completed: "bg-emerald-600 hover:bg-emerald-600",
-  no_show: "bg-gray-400 hover:bg-gray-400",
-  cancelled: "bg-gray-500 hover:bg-gray-500",
+  scheduled: "bg-[#4a7c59] hover:bg-[#4a7c59]",
+  confirmed: "bg-[#3b82c4] hover:bg-[#3b82c4]",
+  in_progress: "bg-[#16a34a] hover:bg-[#16a34a]",
+  completed: "bg-[#3b5998] hover:bg-[#3b5998]",
+  paid: "bg-[#dc2626] hover:bg-[#dc2626]",
+  awaiting: "bg-[#d4a127] hover:bg-[#d4a127]",
+  no_show: "bg-[#9ca3af] hover:bg-[#9ca3af]",
+  cancelled: "bg-[#6b7280] hover:bg-[#6b7280]",
 };
 
 export function AppointmentHoverCard({ appointment, children }: AppointmentHoverCardProps) {
