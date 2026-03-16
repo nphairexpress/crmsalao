@@ -1068,7 +1068,7 @@ export default function Configuracoes() {
                                       >
                                         <Pencil className="h-4 w-4" />
                                       </Button>
-                                      {!level.is_system && isMaster && (
+                                      {!level.is_system && canManageAccess && (
                                         <Button
                                           variant="destructive"
                                           size="icon"
