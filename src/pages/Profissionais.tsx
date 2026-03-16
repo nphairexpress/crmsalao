@@ -998,6 +998,7 @@ export function Profissionais() {
           showInactive={showInactive}
           onToggleInactive={() => setShowInactive(!showInactive)}
           inactiveCount={inactiveProfessionals.length}
+          masterEmail={masterEmail}
         />
 
         {isLoading ? (
