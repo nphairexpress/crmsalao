@@ -71,6 +71,9 @@ export function ServiceModal({ open, onOpenChange, service, onSubmit, isLoading 
         commission_percent: Number(service.commission_percent) || 0,
         category: service.category || "",
         is_active: service.is_active,
+        send_return_reminder: service.send_return_reminder || false,
+        return_reminder_days: service.return_reminder_days || 30,
+        return_reminder_message: service.return_reminder_message || "",
       });
     } else {
       setFormData({
@@ -81,6 +84,9 @@ export function ServiceModal({ open, onOpenChange, service, onSubmit, isLoading 
         commission_percent: 0,
         category: "",
         is_active: true,
+        send_return_reminder: false,
+        return_reminder_days: 30,
+        return_reminder_message: "",
       });
     }
     setActiveTab("info");
