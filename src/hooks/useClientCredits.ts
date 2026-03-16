@@ -30,10 +30,27 @@ export function useGenerateLoyaltyCredit() {
           min_purchase_amount: MIN_PURCHASE_AMOUNT,
           expires_at: expiresAt,
         })
-        .select()
+        .select("*, clients(name, email)")
         .single();
 
       if (error) throw error;
+
+      // Send cashback email
+      const client = (data as any)?.clients;
+      if (client?.email && salonId) {
+        sendEmail({
+          type: "cashback",
+          salon_id: salonId,
+          to_email: client.email,
+          to_name: client.name,
+          client_id: clientId,
+          variables: {
+            credit_amount: creditAmount.toFixed(2),
+            expires_at: format(new Date(expiresAt), "dd/MM/yyyy", { locale: ptBR }),
+          },
+        }).catch(() => {});
+      }
+
       return data;
     },
     onSuccess: () => {
