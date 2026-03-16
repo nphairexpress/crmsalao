@@ -721,10 +721,10 @@ export default function Configuracoes() {
             <Card>
               <CardHeader>
                 <CardTitle>Dados do Salão</CardTitle>
-                <CardDescription>Informações básicas do estabelecimento.</CardDescription>
+                <CardDescription>Configure nome, logo, CNPJ e dados de contato do estabelecimento.</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Em breve: configuração de nome, endereço, logo, CNPJ e dados do salão.</p>
+                <SalonInfoForm />
               </CardContent>
             </Card>
           </>
