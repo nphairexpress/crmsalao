@@ -360,7 +360,8 @@ export default function Configuracoes() {
   // Handlers
   const handleRoleChange = (userId: string, newRole: AppRole) => {
     if (!isMaster) { toast({ title: "Acesso negado", description: "Apenas o usuário master pode alterar permissões.", variant: "destructive" }); return; }
-    updateRole({ userId, newRole });
+    const matchingAccessLevel = accessLevels.find((level) => level.system_key === newRole) ?? null;
+    updateRole({ userId, newRole, accessLevelId: matchingAccessLevel?.id ?? null });
   };
 
   const handleToggleCanOpenCaixa = (userId: string, currentValue: boolean) => {

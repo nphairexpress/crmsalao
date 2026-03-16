@@ -72,6 +72,7 @@ export interface ProfessionalInput {
   state?: string;
   password?: string;
   access_level?: AppRole;
+  access_level_id?: string;
   user_id?: string | null;
 }
 
@@ -95,31 +96,29 @@ export function useProfessionals() {
     mutationFn: async (input: ProfessionalInput) => {
       if (!salonId) throw new Error("Salão não encontrado");
 
-      const { password, access_level, ...professionalData } = input;
+      const { password, access_level, access_level_id, ...professionalData } = input;
 
-      // First create the professional record
       const { data, error } = await supabase
         .from("professionals")
-        .insert({ ...professionalData, salon_id: salonId, create_access: false }) // Always false initially
+        .insert({ ...professionalData, salon_id: salonId, create_access: false })
         .select()
         .single();
       if (error) throw error;
 
-      // If create_access is requested and password is provided, call edge function to create user account
       if (input.create_access && input.email && password) {
         const { error: accessError } = await supabase.functions.invoke("create-professional-access", {
           body: {
             email: input.email,
-            password: password,
+            password,
             fullName: input.name,
-            salonId: salonId,
+            salonId,
             professionalId: data.id,
             accessLevel: input.access_level || "professional",
+            accessLevelId: access_level_id || null,
           },
         });
 
         if (accessError) {
-          // Professional was created but access failed - notify user
           console.error("Error creating access:", accessError);
           throw new Error(`Profissional criado, mas erro ao criar acesso: ${accessError.message}`);
         }
@@ -147,10 +146,8 @@ export function useProfessionals() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...input }: ProfessionalInput & { id: string }) => {
-      // Extract password before updating - it's not a column in professionals table
-      const { password, access_level, ...professionalData } = input;
+      const { password, access_level, access_level_id, ...professionalData } = input;
 
-      // Update professional record (without password)
       const { data, error } = await supabase
         .from("professionals")
         .update(professionalData)
@@ -159,16 +156,16 @@ export function useProfessionals() {
         .single();
       if (error) throw error;
 
-      // If create_access is requested for an existing professional, create user account
       if (input.create_access && input.email && password && !data.user_id) {
         const { error: accessError } = await supabase.functions.invoke("create-professional-access", {
           body: {
             email: input.email,
-            password: password,
+            password,
             fullName: input.name,
             salonId: data.salon_id,
             professionalId: data.id,
             accessLevel: input.access_level || "professional",
+            accessLevelId: access_level_id || null,
           },
         });
 
@@ -200,7 +197,6 @@ export function useProfessionals() {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ id, targetProfessionalId }: { id: string; targetProfessionalId?: string | null }) => {
-      // If there's a target professional, transfer appointments first
       if (targetProfessionalId) {
         const now = new Date().toISOString();
         const { error: transferError } = await supabase
@@ -213,7 +209,6 @@ export function useProfessionals() {
         if (transferError) throw transferError;
       }
 
-      // Deactivate instead of delete
       const { error } = await supabase
         .from("professionals")
         .update({ is_active: false })
