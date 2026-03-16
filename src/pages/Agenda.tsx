@@ -13,6 +13,7 @@ import { useAppointments, AppointmentInput, Appointment } from "@/hooks/useAppoi
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { useClients } from "@/hooks/useClients";
 import { useServices } from "@/hooks/useServices";
+import { useSchedulingSettings } from "@/hooks/useSchedulingSettings";
 import { AppointmentModal } from "@/components/modals/AppointmentModal";
 import { BlockTimeModal, BlockTimeData } from "@/components/modals/BlockTimeModal";
 import { AppointmentHoverCard } from "@/components/agenda/AppointmentHoverCard";
@@ -23,12 +24,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 
-const timeSlots = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
-  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-  "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
-];
+function generateTimeSlots(openingTime: string, closingTime: string, intervalMinutes: number): string[] {
+  const slots: string[] = [];
+  const [openH, openM] = openingTime.split(":").map(Number);
+  const [closeH, closeM] = closingTime.split(":").map(Number);
+  let current = openH * 60 + openM;
+  const end = closeH * 60 + closeM;
+  while (current < end) {
+    const h = Math.floor(current / 60).toString().padStart(2, "0");
+    const m = (current % 60).toString().padStart(2, "0");
+    slots.push(`${h}:${m}`);
+    current += intervalMinutes;
+  }
+  return slots;
+}
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-[#e74c3c]",      // Vermelho - Agendado (como AVEC)
@@ -66,6 +75,13 @@ export default function Agenda() {
   const { professionals, isLoading: professionalsLoading } = useProfessionals();
   const { clients, createClient } = useClients();
   const { services } = useServices();
+  const { settings: schedulingSettings } = useSchedulingSettings();
+
+  const timeSlots = useMemo(() => generateTimeSlots(
+    schedulingSettings.opening_time,
+    schedulingSettings.closing_time,
+    schedulingSettings.slot_interval_minutes
+  ), [schedulingSettings.opening_time, schedulingSettings.closing_time, schedulingSettings.slot_interval_minutes]);
 
   useEffect(() => {
     if (professionals.length > 0 && selectedProfessionalIds.length === 0) {
