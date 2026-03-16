@@ -223,6 +223,45 @@ export function ServiceModal({ open, onOpenChange, service, onSubmit, isLoading 
                 />
               </div>
 
+              {/* Return Reminder */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="send_return_reminder" className="font-medium">Lembrete de Retorno</Label>
+                    <p className="text-xs text-muted-foreground">Enviar e-mail lembrando o cliente de retornar</p>
+                  </div>
+                  <Switch
+                    id="send_return_reminder"
+                    checked={formData.send_return_reminder}
+                    onCheckedChange={(checked) => setFormData({ ...formData, send_return_reminder: checked })}
+                  />
+                </div>
+                {formData.send_return_reminder && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="return_reminder_days">Dias após o serviço</Label>
+                      <Input
+                        id="return_reminder_days"
+                        type="number"
+                        min={1}
+                        value={formData.return_reminder_days}
+                        onChange={(e) => setFormData({ ...formData, return_reminder_days: parseInt(e.target.value) || 30 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="return_reminder_message">Mensagem personalizada (opcional)</Label>
+                      <Textarea
+                        id="return_reminder_message"
+                        value={formData.return_reminder_message}
+                        onChange={(e) => setFormData({ ...formData, return_reminder_message: e.target.value })}
+                        rows={2}
+                        placeholder="Ex: Seu cabelo vai adorar! Agende já seu retorno."
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
               {/* Product Cost Summary */}
               {service && serviceProducts.length > 0 && (
                 <div className="rounded-lg bg-muted p-3 space-y-1">
