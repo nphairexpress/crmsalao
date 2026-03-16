@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Database, ArrowRight, Loader2, CheckCircle2, XCircle, AlertTriangle, Wand2 } from "lucide-react";
 import type { SetupData } from "@/pages/SetupWizard";
 import { SETUP_SCHEMA_SQL } from "@/lib/setupSchemaSQL";
+import { supabase } from "@/integrations/supabase/client";
+import { checkExternalSchema, waitForExternalSchema } from "@/components/setup/setupSupabaseHelpers";
 
 interface Props {
   data: SetupData;
@@ -31,36 +32,27 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
     setConnectionStatus("idle");
 
     try {
-      const testClient = createClient(data.supabaseUrl.trim(), data.supabaseServiceRoleKey.trim(), {
-        auth: { persistSession: false },
-      });
+      const result = await checkExternalSchema(data.supabaseUrl, data.supabaseServiceRoleKey);
 
-      const { error } = await testClient.from("salons").select("id", { count: "exact", head: true });
-
-      if (error) {
-        if (error.message?.includes("schema cache") || error.message?.includes("relation") || error.code === "PGRST204") {
-          setConnectionStatus("no_schema");
-          toast({
-            title: "⚠️ Conexão OK, mas as tabelas não existem",
-            description: "Informe a senha do banco e clique em 'Criar Schema Automaticamente'",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw error;
+      if (result.status === "no_schema") {
+        setConnectionStatus("no_schema");
+        toast({
+          title: "⚠️ Conexão OK, mas as tabelas ainda não estão disponíveis",
+          description: "Informe a senha do banco e clique em 'Criar Schema Automaticamente'",
+          variant: "destructive",
+        });
+        return;
       }
 
       setConnectionStatus("success");
       toast({ title: "✅ Conexão e schema verificados com sucesso!" });
     } catch (err: any) {
-      if (connectionStatus !== "no_schema") {
-        setConnectionStatus("error");
-        toast({
-          title: "Falha na conexão",
-          description: err.message || "Verifique as credenciais e tente novamente",
-          variant: "destructive",
-        });
-      }
+      setConnectionStatus("error");
+      toast({
+        title: "Falha na conexão",
+        description: err.message || "Verifique as credenciais e tente novamente",
+        variant: "destructive",
+      });
     } finally {
       setTesting(false);
     }
@@ -73,36 +65,40 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
     }
 
     setCreatingSchema(true);
+    setConnectionStatus("idle");
 
     try {
-      // Call our edge function to create the schema on the external Supabase
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/setup-schema`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            supabaseUrl: data.supabaseUrl.trim(),
-            dbPassword: data.supabaseDbPassword.trim(),
-            schemaSql: SETUP_SCHEMA_SQL,
-          }),
-        }
-      );
+      const { data: result, error } = await supabase.functions.invoke("setup-schema", {
+        body: {
+          supabaseUrl: data.supabaseUrl.trim(),
+          dbPassword: data.supabaseDbPassword.trim(),
+          schemaSql: SETUP_SCHEMA_SQL,
+        },
+      });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Erro ao criar o schema");
+      if (error) {
+        throw new Error(error.message || "Erro ao criar o schema");
       }
 
-      toast({ title: "✅ Schema criado com sucesso!" });
+      if (!result?.success) {
+        throw new Error(result?.error || "Erro ao criar o schema");
+      }
 
-      // Now re-test the connection
-      await handleTest();
+      const validation = await waitForExternalSchema(data.supabaseUrl, data.supabaseServiceRoleKey);
+
+      if (validation.status !== "success") {
+        setConnectionStatus("no_schema");
+        toast({
+          title: "Schema criado, aguardando sincronização",
+          description: "As tabelas foram criadas, mas a API do projeto externo ainda está atualizando. Tente 'Testar Conexão' em alguns segundos.",
+        });
+        return;
+      }
+
+      setConnectionStatus("success");
+      toast({ title: "✅ Schema criado e sincronizado com sucesso!" });
     } catch (err: any) {
+      setConnectionStatus("error");
       toast({
         title: "Erro ao criar o schema",
         description: err.message || "Verifique a senha do banco e tente novamente",
