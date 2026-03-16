@@ -6,13 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, DollarSign, Users, TrendingUp, ShoppingBag, Loader2, BarChart3, PieChart } from "lucide-react";
+import { CalendarIcon, DollarSign, Users, TrendingUp, ShoppingBag, Loader2, BarChart3, PieChart, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { EmailReportsTab } from "@/components/reports/EmailReportsTab";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, PieChart as RechartsPie, Pie, Cell, Legend,
@@ -168,12 +170,24 @@ export default function Relatorios() {
   return (
     <AppLayoutNew>
       <div className="space-y-6">
-        {/* Header with filters */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Relatórios</h1>
-            <p className="text-muted-foreground">Análise detalhada do desempenho do salão</p>
-          </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold">Relatórios</h1>
+          <p className="text-muted-foreground">Análise detalhada do desempenho do salão</p>
+        </div>
+
+        <Tabs defaultValue="geral" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="geral" className="gap-2"><BarChart3 className="h-4 w-4" />Geral</TabsTrigger>
+            <TabsTrigger value="emails" className="gap-2"><Mail className="h-4 w-4" />E-mails</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="emails">
+            <EmailReportsTab />
+          </TabsContent>
+
+          <TabsContent value="geral" className="space-y-6">
+        {/* Date filters */}
           <div className="flex flex-wrap items-center gap-2">
             {PRESET_RANGES.map(preset => (
               <Button
@@ -208,7 +222,8 @@ export default function Relatorios() {
               </PopoverContent>
             </Popover>
           </div>
-        </div>
+
+
 
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -383,6 +398,8 @@ export default function Relatorios() {
             </Card>
           </>
         )}
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayoutNew>
   );

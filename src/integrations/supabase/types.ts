@@ -1013,37 +1013,58 @@ export type Database = {
       }
       email_logs: {
         Row: {
+          bounced_at: string | null
           campaign_id: string | null
+          clicked_at: string | null
           client_id: string | null
+          complained_at: string | null
           created_at: string
+          delivered_at: string | null
           email_type: string
           error_message: string | null
           id: string
+          opened_at: string | null
+          resend_id: string | null
           salon_id: string
           status: string
           subject: string
+          to_email: string | null
         }
         Insert: {
+          bounced_at?: string | null
           campaign_id?: string | null
+          clicked_at?: string | null
           client_id?: string | null
+          complained_at?: string | null
           created_at?: string
+          delivered_at?: string | null
           email_type: string
           error_message?: string | null
           id?: string
+          opened_at?: string | null
+          resend_id?: string | null
           salon_id: string
           status?: string
           subject: string
+          to_email?: string | null
         }
         Update: {
+          bounced_at?: string | null
           campaign_id?: string | null
+          clicked_at?: string | null
           client_id?: string | null
+          complained_at?: string | null
           created_at?: string
+          delivered_at?: string | null
           email_type?: string
           error_message?: string | null
           id?: string
+          opened_at?: string | null
+          resend_id?: string | null
           salon_id?: string
           status?: string
           subject?: string
+          to_email?: string | null
         }
         Relationships: [
           {
