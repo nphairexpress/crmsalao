@@ -50,6 +50,7 @@ import { TransferMasterModal } from "@/components/modals/TransferMasterModal";
 import { AccessLevelConfigModal } from "@/components/settings/AccessLevelConfigModal";
 import { CreateAccessLevelModal } from "@/components/settings/CreateAccessLevelModal";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
+import { SalonInfoForm } from "@/components/settings/SalonInfoForm";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -717,15 +718,7 @@ export default function Configuracoes() {
             <SettingsBreadcrumb label="Informações do Estabelecimento" />
             <h1 className="text-2xl font-bold tracking-tight">Informações do Estabelecimento</h1>
             <MasterProfessionalProfile />
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados do Salão</CardTitle>
-                <CardDescription>Informações básicas do estabelecimento.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Em breve: configuração de nome, endereço, logo, CNPJ e dados do salão.</p>
-              </CardContent>
-            </Card>
+            <SalonInfoForm />
           </>
         )}
 

@@ -70,19 +70,22 @@ export function AppHeaderNew() {
           onClick={() => navigate("/")}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg md:text-xl">
-            E
-          </div>
+          {salon?.logo_url ? (
+            <Avatar className="h-8 w-8 md:h-10 md:w-10 rounded-lg">
+              <AvatarImage src={salon.logo_url} className="object-cover rounded-lg" />
+              <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-bold text-lg md:text-xl">
+                {salon?.name?.charAt(0)?.toUpperCase() || "S"}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg md:text-xl">
+              {salon?.name?.charAt(0)?.toUpperCase() || "S"}
+            </div>
+          )}
           <span className="text-lg md:text-xl font-bold text-primary hidden sm:block">
-            EXP Salão
+            {(salon as any)?.trade_name || salon?.name || "Meu Salão"}
           </span>
         </button>
-        
-        <div className="h-6 w-px bg-border hidden lg:block" />
-        
-        <span className="font-semibold text-foreground hidden lg:block text-sm">
-          {salon?.name || "Carregando..."}
-        </span>
       </div>
 
       {/* Right side actions */}
