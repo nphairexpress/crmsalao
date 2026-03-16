@@ -336,7 +336,7 @@ export default function Configuracoes() {
   const { users, isLoading, updateRole, updateCanOpenCaixa, deleteAccess, isUpdating, isDeleting } = useUserAccess();
   const { cardBrands, isLoading: isLoadingBrands, createCardBrand, updateCardBrand, deleteCardBrand, isCreating: isCreatingBrand, isUpdating: isUpdatingBrand, isDeleting: isDeletingBrand } = useCardBrands();
   const { bankAccounts, isLoading: isLoadingBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount } = useBankAccounts();
-  const { accessLevels, isLoading: isLoadingAccessLevels, createAccessLevel, updateAccessLevel, updatePermission, deleteAccessLevel, isCreating: isCreatingAccessLevel, isUpdating: isUpdatingAccessLevel, isDeleting: isDeletingAccessLevel } = useAccessLevels();
+  const { accessLevels, isLoading: isLoadingAccessLevels, error: accessLevelsError, createAccessLevel, updateAccessLevel, updatePermission, deleteAccessLevel, isCreating: isCreatingAccessLevel, isUpdating: isUpdatingAccessLevel, isDeleting: isDeletingAccessLevel } = useAccessLevels();
 
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
