@@ -18,8 +18,44 @@ export default function Servicos() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { services, isLoading, createService, updateService, deleteService, isCreating, isUpdating, isDeleting } = useServices();
+  const { isMaster, salonId } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const serviceImportFields: ImportField[] = [
+    { key: "name", label: "Nome", required: true },
+    { key: "description", label: "Descrição" },
+    { key: "duration_minutes", label: "Duração (minutos)", required: true },
+    { key: "price", label: "Preço", required: true },
+    { key: "category", label: "Categoria" },
+    { key: "commission_percent", label: "Comissão (%)" },
+  ];
+
+  const handleImportServices = async (records: Record<string, any>[]) => {
+    if (!salonId) throw new Error("Salão não encontrado");
+    const rows = records.map(r => ({
+      salon_id: salonId,
+      name: String(r.name),
+      description: r.description ? String(r.description) : null,
+      duration_minutes: parseInt(String(r.duration_minutes)) || 30,
+      price: parseFloat(String(r.price).replace(",", ".")) || 0,
+      category: r.category ? String(r.category) : null,
+      commission_percent: r.commission_percent ? parseFloat(String(r.commission_percent).replace(",", ".")) : 0,
+      is_active: true,
+    }));
+
+    for (let i = 0; i < rows.length; i += 50) {
+      const batch = rows.slice(i, i + 50);
+      const { error } = await supabase.from("services").insert(batch);
+      if (error) throw error;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["services"] });
+    toast({ title: `${rows.length} serviços importados com sucesso!` });
+  };
 
   const handleEdit = (service: Service) => { setSelectedService(service); setModalOpen(true); };
   const handleDelete = (service: Service) => { setSelectedService(service); setDeleteOpen(true); };
