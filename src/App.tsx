@@ -16,6 +16,7 @@ import Comissoes from "./pages/Comissoes";
 import Estoque from "./pages/Estoque";
 import Configuracoes from "./pages/Configuracoes";
 import Relatorios from "./pages/Relatorios";
+import Marketing from "./pages/Marketing";
 import ClientAlerts from "./pages/ClientAlerts";
 import ClientLoyalty from "./pages/ClientLoyalty";
 import NotFound from "./pages/NotFound";
