@@ -509,6 +509,7 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
             <Label htmlFor="can_be_assistant" className="text-sm cursor-pointer font-medium">
               Pode ser assistente
             </Label>
+          </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Qual <strong>ordem</strong> na Agenda?</Label>
             <Input type="number" min={0} value={form.agenda_order} onChange={(e) => setForm({ ...form, agenda_order: Number(e.target.value) })} className="w-20" />
