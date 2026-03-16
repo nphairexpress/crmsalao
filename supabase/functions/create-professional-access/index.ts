@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
     const salonId = String(body?.salonId ?? "").trim();
     const professionalId = String(body?.professionalId ?? "").trim();
     const accessLevel = String(body?.accessLevel ?? "professional").trim();
+    const accessLevelId = body?.accessLevelId ? String(body.accessLevelId).trim() : null;
 
     if (!email || !password || !fullName || !salonId || !professionalId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
