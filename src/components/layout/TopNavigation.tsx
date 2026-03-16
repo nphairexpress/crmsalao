@@ -50,7 +50,17 @@ const navItems: NavItem[] = [
     subItems: [
       { title: "Lista de Clientes", url: "/clientes" },
       { title: "Avisos", url: "/clientes/avisos" },
-      { title: "Fidelidade", url: "/clientes/fidelidade" },
+    ]
+  },
+  {
+    title: "Marketing",
+    url: "/marketing",
+    icon: Megaphone,
+    subItems: [
+      { title: "Promoções", url: "/marketing?tab=promocoes" },
+      { title: "Campanhas de E-mail", url: "/marketing?tab=email" },
+      { title: "Campanhas de SMS", url: "/marketing?tab=sms" },
+      { title: "Fidelidade", url: "/marketing?tab=fidelidade" },
     ]
   },
   { 
