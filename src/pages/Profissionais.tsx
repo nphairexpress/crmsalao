@@ -83,6 +83,7 @@ function ProfessionalSidebar({
   showInactive,
   onToggleInactive,
   inactiveCount,
+  masterEmail,
 }: {
   professionals: Professional[];
   selectedId: string | null;
@@ -93,6 +94,7 @@ function ProfessionalSidebar({
   showInactive: boolean;
   onToggleInactive: () => void;
   inactiveCount: number;
+  masterEmail: string | null;
 }) {
   return (
     <div className="w-64 shrink-0 border-r bg-muted/30 flex flex-col h-full">
@@ -132,9 +134,11 @@ function ProfessionalSidebar({
               </AvatarFallback>
             </Avatar>
             <span className="truncate uppercase text-xs">{p.nickname || p.name}</span>
-            {p.user_id && (
-              <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 shrink-0">MASTER</Badge>
-            )}
+            {p.user_id && masterEmail && p.email === masterEmail ? (
+              <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 shrink-0 border-primary text-primary">MASTER</Badge>
+            ) : p.user_id ? (
+              <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 shrink-0">ACESSO</Badge>
+            ) : null}
           </button>
         ))}
       </div>
@@ -946,6 +950,19 @@ export function Profissionais() {
   const [showInactive, setShowInactive] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [masterEmail, setMasterEmail] = useState<string | null>(null);
+
+  // Fetch master email from system_config
+  useEffect(() => {
+    supabase
+      .from("system_config")
+      .select("value")
+      .eq("key", "master_user_email")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) setMasterEmail(data.value);
+      });
+  }, []);
 
   const activeProfessionals = professionals.filter((p) => p.is_active);
   const inactiveProfessionals = professionals.filter((p) => !p.is_active);
@@ -981,6 +998,7 @@ export function Profissionais() {
           showInactive={showInactive}
           onToggleInactive={() => setShowInactive(!showInactive)}
           inactiveCount={inactiveProfessionals.length}
+          masterEmail={masterEmail}
         />
 
         {isLoading ? (
