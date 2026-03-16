@@ -906,7 +906,13 @@ export default function Configuracoes() {
                   {isLoadingAccessLevels ? (
                     <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                   ) : accessLevels.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">Nenhum grupo de acesso configurado.</div>
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhum grupo de acesso configurado.
+                      <br />
+                      <Button variant="outline" size="sm" className="mt-2" onClick={() => queryClient.invalidateQueries({ queryKey: ["access-levels"] })}>
+                        Recarregar
+                      </Button>
+                    </div>
                   ) : (
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
