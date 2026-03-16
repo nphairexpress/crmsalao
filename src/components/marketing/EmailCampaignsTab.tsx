@@ -143,6 +143,17 @@ export function EmailCampaignsTab() {
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    {campaign.status === "draft" && (
+                      <Button 
+                        size="sm" 
+                        variant="default"
+                        onClick={() => sendCampaignMutation.mutate(campaign)}
+                        disabled={sendCampaignMutation.isPending}
+                      >
+                        {sendCampaignMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                        Enviar
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" onClick={() => { setEditing(campaign); setModalOpen(true); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>
