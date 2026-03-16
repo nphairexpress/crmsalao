@@ -125,7 +125,6 @@ export function AccessLevelConfigModal({
                                 <Checkbox
                                   checked={isEnabled}
                                   onCheckedChange={() => handlePermissionToggle(permKey, isEnabled)}
-                                  disabled={isUpdating}
                                   className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                 />
                               ) : null}
