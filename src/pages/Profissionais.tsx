@@ -586,14 +586,57 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Este profissional ainda não possui acesso ao sistema. Preencha os dados abaixo para criar o acesso.
+                </p>
                 <div className="space-y-1.5">
                   <Label className="text-xs">E-mail para acesso:</Label>
-                  <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <Input
+                    value={newAccessEmail || form.email}
+                    onChange={(e) => setNewAccessEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                  />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Para criar acesso ao sistema, use o botão "Adicionar Profissional" e marque "Criar acesso ao sistema".
-                </p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Senha de acesso:</Label>
+                  <Input
+                    type="password"
+                    value={newAccessPassword}
+                    onChange={(e) => setNewAccessPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Nível de acesso:</Label>
+                  <Select
+                    value={selectedAccessLevelId || ""}
+                    onValueChange={(v) => setSelectedAccessLevelId(v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o nível de acesso" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accessLevels.map((level) => (
+                        <SelectItem key={level.id} value={level.id}>
+                          {level.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Não encontrou o acesso ideal? Configure os níveis de acesso em{" "}
+                    <a href="/configuracoes/acessos" className="text-primary underline">Configurações → Grupos de Acessos</a>.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleCreateAccess}
+                  disabled={isCreatingAccess}
+                  className="gap-2"
+                >
+                  {isCreatingAccess ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                  Criar Acesso ao Sistema
+                </Button>
               </div>
             )}
           </AccordionContent>
