@@ -253,7 +253,7 @@ export function useAccessLevels() {
       }
     },
     onMutate: async (data) => {
-      // Optimistic update
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: ["access-levels", salonId] });
       const previous = queryClient.getQueryData<AccessLevelWithPermissions[]>(["access-levels", salonId]);
       queryClient.setQueryData<AccessLevelWithPermissions[]>(["access-levels", salonId], (old) => {
@@ -277,9 +277,7 @@ export function useAccessLevels() {
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["access-levels", salonId] });
-    },
+    // Don't invalidate on settled to avoid flickering — the optimistic update is the source of truth
   });
 
   const deleteAccessLevelMutation = useMutation({
