@@ -411,6 +411,14 @@ export default function Clientes() {
         }} 
         isLoading={isDeleting} 
       />
+      <ImportModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Importar Clientes"
+        description="Importe clientes de uma planilha XLS, XLSX ou CSV exportada de outro sistema."
+        fields={clientImportFields}
+        onImport={handleImportClients}
+      />
     </AppLayoutNew>
   );
 }
