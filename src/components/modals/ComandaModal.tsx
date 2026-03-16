@@ -701,7 +701,25 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["comandas", salonId] });
+      // Save overpayment as client credit
+      if (saveOverpaymentAsCredit && difference < -0.01 && comanda.client_id) {
+        try {
+          const overpayment = Math.abs(difference);
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 90); // 90 days expiry
+          await supabase.from("client_credits").insert({
+            salon_id: salonId,
+            client_id: comanda.client_id,
+            comanda_id: comanda.id,
+            credit_amount: Math.round(overpayment * 100) / 100,
+            min_purchase_amount: 0,
+            expires_at: expiresAt.toISOString(),
+          });
+        } catch (creditError) {
+          console.error("Erro ao salvar crédito de troco:", creditError);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
       queryClient.invalidateQueries({ queryKey: ["products", salonId] });
       queryClient.invalidateQueries({ queryKey: ["client-credits"] });
