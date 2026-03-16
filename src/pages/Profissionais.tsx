@@ -165,6 +165,9 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
   const { accessLevels } = useAccessLevels();
   const { lookupCep, isLoading: isLookingUpCep } = useCepLookup();
   const [selectedAccessLevelId, setSelectedAccessLevelId] = useState<string | null>(null);
+  const [newAccessPassword, setNewAccessPassword] = useState("");
+  const [newAccessEmail, setNewAccessEmail] = useState("");
+  const [isCreatingAccess, setIsCreatingAccess] = useState(false);
 
   // Professional data form
   const [form, setForm] = useState({
