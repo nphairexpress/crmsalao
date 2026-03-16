@@ -902,6 +902,7 @@ export default function Configuracoes() {
                     )}
                   </div>
                 </CardHeader>
+                <CardContent>
                   {accessLevelsError ? (
                     <div className="text-center py-8 text-destructive">
                       Erro ao carregar grupos: {(accessLevelsError as Error).message}
