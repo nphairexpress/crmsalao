@@ -206,7 +206,14 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
 
       // 3f. Access levels on external
       setStatusMsg("📤 Migrando níveis de acesso...");
-      for (const level of DEFAULT_ACCESS_LEVELS) {
+      const defaultAccessLevels = [
+        { name: "Administrador", system_key: "admin", is_system: true, color: "#22c55e", description: "Acesso total ao sistema" },
+        { name: "Gerente", system_key: "manager", is_system: true, color: "#3b82f6", description: "Gestão operacional" },
+        { name: "Recepcionista", system_key: "receptionist", is_system: true, color: "#f59e0b", description: "Atendimento e agenda" },
+        { name: "Financeiro", system_key: "financial", is_system: true, color: "#8b5cf6", description: "Acesso financeiro" },
+        { name: "Profissional", system_key: "professional", is_system: true, color: "#ec4899", description: "Apenas sua agenda" },
+      ];
+      for (const level of defaultAccessLevels) {
         const { data: extExisting } = await extServiceClient
           .from("access_levels")
           .select("id")
