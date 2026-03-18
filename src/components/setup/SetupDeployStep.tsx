@@ -335,9 +335,8 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
         <div className="rounded-lg border bg-primary/5 p-3 text-sm text-foreground">
           <p className="font-medium mb-1">🚀 O que vai acontecer:</p>
           <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
-            <li>Salvar salão, usuário e permissões <strong>localmente</strong> (Lovable Cloud)</li>
-            <li>Criar tabelas no <strong>Supabase externo</strong></li>
-            <li>Migrar todos os dados para o Supabase externo</li>
+            <li>Criar usuário master no <strong>Supabase externo</strong></li>
+            <li>Criar salão, perfil e permissões no <strong>Supabase externo</strong></li>
             <li>Configurar variáveis de ambiente na Vercel</li>
             <li>Fazer o redeploy automático</li>
           </ol>
