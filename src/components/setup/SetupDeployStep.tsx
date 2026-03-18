@@ -31,9 +31,11 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
+  const isRunningOnVercel = !window.location.hostname.includes('lovable.app') && !window.location.hostname.includes('localhost');
+
   const handleFinish = async () => {
     // Validate required fields
-    if (!data.supabaseUrl.trim() || !data.supabaseAnonKey.trim() || !data.supabaseServiceRoleKey.trim() || !data.supabaseDbPassword.trim()) {
+    if (!data.supabaseUrl.trim() || !data.supabaseAnonKey.trim() || !data.supabaseServiceRoleKey.trim()) {
       toast({ title: "Preencha todas as credenciais do Supabase externo", variant: "destructive" });
       return;
     }
@@ -46,83 +48,38 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
     setStatusMsg("");
 
     try {
-      // ── PHASE 1: Save to Lovable Cloud (local DB) via edge function ──
-      setStatusMsg("💾 Criando usuário master...");
-
-      // 1a. Create or sign in master user on Lovable Cloud
-      let localSession: any;
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: data.masterEmail,
-        password: data.masterPassword,
-        options: { data: { full_name: data.masterName } },
-      });
-
-      if (signUpError) {
-        if (signUpError.message?.includes("already") || signUpError.message?.includes("User already registered")) {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: data.masterEmail,
-            password: data.masterPassword,
-          });
-          if (signInError) throw new Error(`Usuário já existe mas não foi possível logar: ${signInError.message}`);
-          localSession = signInData.session;
-        } else {
-          throw signUpError;
-        }
-      } else {
-        if (!signUpData.user) throw new Error("Erro ao criar usuário");
-        localSession = signUpData.session;
-        // If no session (email confirmation required), sign in
-        if (!localSession) {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: data.masterEmail,
-            password: data.masterPassword,
-          });
-          if (signInError) throw new Error(`Usuário criado mas não foi possível logar: ${signInError.message}`);
-          localSession = signInData.session;
-        }
-      }
-
-      // 1b. Create salon, profile, role via edge function (bypasses RLS)
-      setStatusMsg("💾 Criando salão e configurações...");
-      const { data: salonResult, error: salonFnError } = await supabase.functions.invoke("create-salon", {
-        body: {
-          fullName: data.masterName,
-          salonName: data.salonName,
-          tradeName: data.tradeName || data.salonName,
-          salonPhone: data.salonPhone || "",
-          salonEmail: data.salonEmail || "",
-          salonCnpj: data.salonCnpj || "",
-        },
-      });
-
-      if (salonFnError || !salonResult?.salonId) {
-        throw new Error(salonResult?.error || salonFnError?.message || "Erro ao criar salão");
-      }
-
-      toast({ title: "✅ Dados salvos localmente com sucesso!" });
-
-      // ── PHASE 2: Create schema on external Supabase ──
-      setStatusMsg("🔧 Criando tabelas no Supabase externo...");
-      const { data: schemaResult, error: schemaError } = await supabase.functions.invoke("setup-schema", {
-        body: {
-          supabaseUrl: data.supabaseUrl.trim(),
-          dbPassword: data.supabaseDbPassword.trim(),
-          schemaSql: SETUP_SCHEMA_SQL,
-        },
-      });
-
-      if (schemaError || !schemaResult?.success) {
-        throw new Error(schemaResult?.error || schemaError?.message || "Erro ao criar schema externo");
-      }
-
-      // ── PHASE 3: Migrate data to external Supabase ──
-      setStatusMsg("📤 Migrando dados para Supabase externo...");
       const extServiceClient = createClient(data.supabaseUrl.trim(), data.supabaseServiceRoleKey.trim(), {
         auth: { persistSession: false, autoRefreshToken: false },
       });
 
-      // 3a. Create master user on external Supabase
-      setStatusMsg("📤 Criando usuário master no Supabase externo...");
+      // ── PHASE 1: Check/Create schema on external Supabase ──
+      setStatusMsg("🔧 Verificando schema no Supabase externo...");
+      
+      // Check if schema already exists
+      const { error: schemaCheckError } = await extServiceClient.from("salons").select("id", { count: "exact", head: true });
+      
+      if (schemaCheckError && (schemaCheckError.code === "PGRST204" || schemaCheckError.message?.includes("relation") || schemaCheckError.message?.includes("Could not find"))) {
+        // Schema doesn't exist - need to create it
+        // Try via Lovable Cloud edge function first, fallback to manual instructions
+        if (!isRunningOnVercel) {
+          setStatusMsg("🔧 Criando tabelas no Supabase externo...");
+          const { data: schemaResult, error: schemaError } = await supabase.functions.invoke("setup-schema", {
+            body: {
+              supabaseUrl: data.supabaseUrl.trim(),
+              dbPassword: data.supabaseDbPassword?.trim() || "",
+              schemaSql: SETUP_SCHEMA_SQL,
+            },
+          });
+          if (schemaError || !schemaResult?.success) {
+            throw new Error("Erro ao criar schema. Execute o SQL manualmente no Supabase SQL Editor.");
+          }
+        } else {
+          throw new Error("O schema não existe no Supabase externo. Acesse o SQL Editor do Supabase e execute o schema SQL primeiro. Você pode copiar o SQL na etapa de Integrações do setup.");
+        }
+      }
+
+      // ── PHASE 2: Create master user on external Supabase ──
+      setStatusMsg("📤 Criando usuário master...");
       let extUserId: string;
 
       const { data: extUserList } = await extServiceClient.auth.admin.listUsers();
@@ -137,12 +94,12 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
           email_confirm: true,
           user_metadata: { full_name: data.masterName },
         });
-        if (extUserError || !extNewUser?.user) throw extUserError || new Error("Erro ao criar usuário externo");
+        if (extUserError || !extNewUser?.user) throw extUserError || new Error("Erro ao criar usuário");
         extUserId = extNewUser.user.id;
       }
 
-      // 3b. Create salon on external Supabase
-      setStatusMsg("📤 Migrando salão...");
+      // ── PHASE 3: Create salon and seed data ──
+      setStatusMsg("📤 Criando salão...");
       let extSalonId: string;
       const { data: extExistingSalon } = await extServiceClient
         .from("salons")
@@ -164,12 +121,12 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
           })
           .select("id")
           .single();
-        if (extSalonError || !extNewSalon?.id) throw extSalonError || new Error("Erro ao criar salão externo");
+        if (extSalonError || !extNewSalon?.id) throw extSalonError || new Error("Erro ao criar salão");
         extSalonId = extNewSalon.id;
       }
 
-      // 3c. Create profile on external Supabase
-      setStatusMsg("📤 Migrando perfil...");
+      // Profile
+      setStatusMsg("📤 Criando perfil...");
       const { data: extExistingProfile } = await extServiceClient
         .from("profiles")
         .select("id")
@@ -184,7 +141,7 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
         });
       }
 
-      // 3d. Create admin role on external Supabase
+      // Admin role
       const { data: extExistingRole } = await extServiceClient
         .from("user_roles")
         .select("id")
@@ -199,14 +156,14 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
         });
       }
 
-      // 3e. System config on external
+      // System config
       await extServiceClient.from("system_config").upsert(
         { key: "master_user_email", value: data.masterEmail },
         { onConflict: "key" }
       );
 
-      // 3f. Access levels on external
-      setStatusMsg("📤 Migrando níveis de acesso...");
+      // Access levels
+      setStatusMsg("📤 Criando níveis de acesso...");
       const defaultAccessLevels = [
         { name: "Administrador", system_key: "admin", is_system: true, color: "#22c55e", description: "Acesso total ao sistema" },
         { name: "Gerente", system_key: "manager", is_system: true, color: "#3b82f6", description: "Gestão operacional" },
@@ -226,7 +183,7 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
         }
       }
 
-      // 3g. Scheduling settings on external
+      // Scheduling settings
       const { data: extExistingSched } = await extServiceClient
         .from("scheduling_settings")
         .select("id")
@@ -236,7 +193,7 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
         await extServiceClient.from("scheduling_settings").insert({ salon_id: extSalonId });
       }
 
-      // 3h. Commission settings on external
+      // Commission settings
       const { data: extExistingComm } = await extServiceClient
         .from("commission_settings")
         .select("id")
@@ -378,9 +335,8 @@ export default function SetupDeployStep({ data, updateData, onDone, onBack, toas
         <div className="rounded-lg border bg-primary/5 p-3 text-sm text-foreground">
           <p className="font-medium mb-1">🚀 O que vai acontecer:</p>
           <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground">
-            <li>Salvar salão, usuário e permissões <strong>localmente</strong> (Lovable Cloud)</li>
-            <li>Criar tabelas no <strong>Supabase externo</strong></li>
-            <li>Migrar todos os dados para o Supabase externo</li>
+            <li>Criar usuário master no <strong>Supabase externo</strong></li>
+            <li>Criar salão, perfil e permissões no <strong>Supabase externo</strong></li>
             <li>Configurar variáveis de ambiente na Vercel</li>
             <li>Fazer o redeploy automático</li>
           </ol>
