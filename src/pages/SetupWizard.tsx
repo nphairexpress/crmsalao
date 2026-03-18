@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import SetupProgress from "@/components/setup/SetupProgress";
 import SetupSalonStep from "@/components/setup/SetupSalonStep";
 import SetupMasterStep from "@/components/setup/SetupMasterStep";
@@ -44,6 +45,7 @@ export interface SetupData {
 export default function SetupWizard() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<SetupStep>("salon");
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<SetupData>({
     salonName: "",
     tradeName: "",
@@ -62,11 +64,43 @@ export default function SetupWizard() {
     vercelProjectId: "",
   });
 
+  // Check if salon already exists - if so, skip to deploy step (reconfigure mode)
+  useEffect(() => {
+    const checkExisting = async () => {
+      try {
+        const { count } = await supabase
+          .from("salons")
+          .select("id", { count: "exact", head: true });
+        
+        if (count && count > 0) {
+          setCurrentStep("deploy");
+          toast({
+            title: "Modo reconfiguração",
+            description: "Salão já existe. Preencha as credenciais do Supabase externo e Vercel para fazer o deploy.",
+          });
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkExisting();
+  }, []);
+
   const updateData = (partial: Partial<SetupData>) => {
     setData(prev => ({ ...prev, ...partial }));
   };
 
   const stepIndex = SETUP_STEPS.findIndex(s => s.key === currentStep);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
