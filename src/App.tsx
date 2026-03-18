@@ -92,7 +92,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/setup" element={hasSalon ? <Navigate to="/" replace /> : <SetupWizard />} />
+      <Route path="/setup" element={<SetupWizard />} />
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthNew />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
