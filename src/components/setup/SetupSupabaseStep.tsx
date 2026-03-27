@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Database, ArrowRight, Loader2, CheckCircle2, ExternalLink, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SETUP_SCHEMA_SQL } from "@/lib/setupSchemaSQL";
+import { waitForExternalSchema } from "@/components/setup/setupSupabaseHelpers";
 import type { SetupData } from "@/pages/SetupWizard";
 
 interface Props {
@@ -71,6 +72,11 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
         }
         setStatusMsg("🔧 Criando tabelas no banco de dados...");
         await createSchemaViaPat(extractProjectRef(data.supabaseUrl.trim()), data.supabasePat.trim());
+        setStatusMsg("⏳ Aguardando tabelas ficarem disponíveis...");
+        const schemaResult = await waitForExternalSchema(data.supabaseUrl.trim(), data.supabaseServiceRoleKey.trim(), 12, 2000);
+        if (schemaResult.status !== "success") {
+          throw new Error("Tabelas foram criadas mas ainda não estão acessíveis. Aguarde alguns segundos e clique em 'Testar Conexão' novamente.");
+        }
         toast({ title: "✅ Tabelas criadas com sucesso!" });
       }
 
