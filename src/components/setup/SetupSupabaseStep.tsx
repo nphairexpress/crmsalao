@@ -30,17 +30,11 @@ function splitStatements(sql: string): string[] {
 
   for (const line of lines) {
     const stripped = line.trim();
-    // Skip comment-only and empty lines when not accumulating
     if ((stripped.startsWith("--") || stripped === "") && current.length === 0) continue;
-
     current.push(line);
-
-    // Track $$ blocks (functions, triggers)
     const dollarCount = (line.match(/\$\$/g) || []).length;
     if (dollarCount % 2 === 1) inDollar = !inDollar;
-
     if (!inDollar && stripped.endsWith(";")) {
-      // Remove leading comment lines from the statement
       const stmtLines = current.filter(l => !l.trim().startsWith("--"));
       const stmt = stmtLines.join("\n").trim();
       if (stmt) statements.push(stmt);
@@ -50,51 +44,51 @@ function splitStatements(sql: string): string[] {
   return statements;
 }
 
-/** Send a single SQL statement via Supabase Management API */
-async function runStatement(projectRef: string, pat: string, sql: string): Promise<string | null> {
-  const res = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${pat}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ query: sql }),
-  });
-  if (res.ok) return null;
-  const body = await res.text();
-  const msg = (() => { try { const j = JSON.parse(body); return j?.message || j?.error || body; } catch { return body; } })();
-  if (msg.includes("already exists") || msg.includes("duplicate")) return null;
-  return msg;
-}
-
-/** Create full schema by sending statements one by one */
-async function createSchemaViaPat(
+/**
+ * Create schema via server-side proxy (/api/run-sql)
+ * This avoids CORS issues with the Supabase Management API
+ */
+async function createSchemaViaProxy(
   projectRef: string,
   pat: string,
   onProgress?: (msg: string, current: number, total: number) => void,
 ): Promise<void> {
   const statements = splitStatements(SETUP_SCHEMA_SQL);
   const total = statements.length;
-  const errors: string[] = [];
 
-  for (let i = 0; i < total; i++) {
-    const desc = statements[i].split("\n")[0].trim().substring(0, 60);
-    onProgress?.(`🔧 Criando estrutura... (${i + 1}/${total})`, i + 1, total);
+  // Send in batches of 20 to show progress
+  const batchSize = 20;
+  let globalOk = 0;
+  let globalErrors: string[] = [];
 
-    const err = await runStatement(projectRef, pat, statements[i]);
-    if (err) {
-      console.error(`[Schema ${i+1}/${total}] Erro em "${desc}":`, err);
-      errors.push(`${desc}: ${err}`);
+  for (let start = 0; start < total; start += batchSize) {
+    const batch = statements.slice(start, start + batchSize);
+    const batchEnd = Math.min(start + batchSize, total);
+    onProgress?.(`🔧 Criando estrutura... (${batchEnd}/${total})`, batchEnd, total);
+
+    const res = await fetch("/api/run-sql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectRef, pat, statements: batch }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro no servidor: ${res.status}`);
     }
 
-    // Small delay every 10 statements to avoid rate limiting
-    if (i % 10 === 9) await new Promise(r => setTimeout(r, 300));
+    const result = await res.json();
+    globalOk += result.ok + result.skipped;
+
+    if (result.errors > 0 && result.details) {
+      for (const d of result.details) {
+        console.error(`[Schema] Erro:`, d.error);
+        globalErrors.push(d.error);
+      }
+    }
   }
 
-  if (errors.length > 0) {
-    console.error("Schema errors:", errors);
-    // Only throw if more than 5% of statements failed (some "already exists" might slip through)
-    const criticalErrors = errors.filter(e => !e.includes("1010"));
-    if (criticalErrors.length > 0) {
-      throw new Error(`${criticalErrors.length} erro(s) ao criar o banco:\n${criticalErrors.slice(0, 3).join("\n")}`);
-    }
+  if (globalErrors.length > 5) {
+    throw new Error(`${globalErrors.length} erro(s) ao criar o banco. Verifique o console para detalhes.`);
   }
 }
 
@@ -132,7 +126,7 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
           setTesting(false);
           return;
         }
-        await createSchemaViaPat(
+        await createSchemaViaProxy(
           extractProjectRef(data.supabaseUrl.trim()),
           data.supabasePat.trim(),
           (msg, current, total) => { setStatusMsg(msg); setProgress({ current, total }); }
