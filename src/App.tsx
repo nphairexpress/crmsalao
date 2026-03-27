@@ -45,15 +45,13 @@ function AppRoutes() {
   // If wizard was permanently disabled after setup (baked into build via Vercel env var)
   const installerDisabled = import.meta.env.VITE_INSTALLER_ENABLED === "false";
 
-  // Determine if this is a production deployment (Vercel) or Lovable dev
-  const isLovableDev = window.location.hostname.includes('lovable.app') || window.location.hostname === 'localhost';
-  
-  // For Lovable dev: check if Supabase is configured and salon exists
-  const supabaseConfigured = isLovableDev ? Boolean(
+  // Check if Supabase is configured (not placeholder values)
+  const supabaseConfigured = Boolean(
     import.meta.env.VITE_SUPABASE_URL &&
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY &&
-    import.meta.env.VITE_SUPABASE_URL !== "https://placeholder.supabase.co"
-  ) : true; // External deployments with setup done are always configured
+    import.meta.env.VITE_SUPABASE_URL !== "https://placeholder.supabase.co" &&
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY !== "placeholder"
+  );
 
   // Check if setup has been done via SECURITY DEFINER function (bypasses RLS)
   const { data: hasSalon, isLoading: checkingSalon } = useQuery({
@@ -102,8 +100,8 @@ function AppRoutes() {
     );
   }
 
-  // If Supabase is not configured (Lovable dev only), go to setup
-  if (isLovableDev && !supabaseConfigured) {
+  // If Supabase is not configured, go to setup wizard
+  if (!supabaseConfigured) {
     return (
       <Routes>
         <Route path="/setup" element={<SetupWizard />} />
