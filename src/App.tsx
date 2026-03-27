@@ -45,13 +45,18 @@ function AppRoutes() {
   // If wizard was permanently disabled after setup (baked into build via Vercel env var)
   const installerDisabled = import.meta.env.VITE_INSTALLER_ENABLED === "false";
 
-  // Check if Supabase is configured (not placeholder values)
-  const supabaseConfigured = Boolean(
+  // Check if Supabase is configured (env vars OR localStorage credentials from wizard)
+  const hasEnvConfig = Boolean(
     import.meta.env.VITE_SUPABASE_URL &&
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY &&
     import.meta.env.VITE_SUPABASE_URL !== "https://placeholder.supabase.co" &&
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY !== "placeholder"
   );
+  const hasLocalConfig = (() => {
+    try { return Boolean(localStorage.getItem("ext_supabase_url") && localStorage.getItem("ext_supabase_anon_key")); }
+    catch { return false; }
+  })();
+  const supabaseConfigured = hasEnvConfig || hasLocalConfig;
 
   // Check if setup has been done via SECURITY DEFINER function (bypasses RLS)
   const { data: hasSalon, isLoading: checkingSalon } = useQuery({
