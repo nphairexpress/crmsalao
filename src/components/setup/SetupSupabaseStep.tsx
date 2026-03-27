@@ -122,14 +122,8 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
       if (authError) throw new Error("Credenciais inválidas: " + authError.message);
 
       setStatusMsg("🔍 Verificando banco de dados...");
-      const { error: schemaError } = await client.from("salons").select("id", { count: "exact", head: true });
-      const schemaMissing = schemaError && (
-        schemaError.code === "PGRST204" ||
-        schemaError.code === "PGRST205" ||
-        schemaError.code === "42P01" ||
-        schemaError.message?.includes("relation") ||
-        schemaError.message?.includes("Could not find")
-      );
+      const { data: schemaData, error: schemaError } = await client.from("salons").select("id").limit(1);
+      const schemaMissing = schemaError != null;
 
       if (schemaMissing) {
         if (!data.supabasePat.trim()) {
