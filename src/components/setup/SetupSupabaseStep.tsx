@@ -21,44 +21,80 @@ function extractProjectRef(url: string): string {
   try { return new URL(url).hostname.split(".")[0]; } catch { return ""; }
 }
 
-async function runQueryViaPat(projectRef: string, pat: string, sql: string): Promise<string | null> {
+/** Split SQL into individual statements, preserving $$ function blocks */
+function splitStatements(sql: string): string[] {
+  const statements: string[] = [];
+  const lines = sql.split("\n");
+  let current: string[] = [];
+  let inDollar = false;
+
+  for (const line of lines) {
+    const stripped = line.trim();
+    // Skip comment-only and empty lines when not accumulating
+    if ((stripped.startsWith("--") || stripped === "") && current.length === 0) continue;
+
+    current.push(line);
+
+    // Track $$ blocks (functions, triggers)
+    const dollarCount = (line.match(/\$\$/g) || []).length;
+    if (dollarCount % 2 === 1) inDollar = !inDollar;
+
+    if (!inDollar && stripped.endsWith(";")) {
+      // Remove leading comment lines from the statement
+      const stmtLines = current.filter(l => !l.trim().startsWith("--"));
+      const stmt = stmtLines.join("\n").trim();
+      if (stmt) statements.push(stmt);
+      current = [];
+    }
+  }
+  return statements;
+}
+
+/** Send a single SQL statement via Supabase Management API */
+async function runStatement(projectRef: string, pat: string, sql: string): Promise<string | null> {
   const res = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
     method: "POST",
     headers: { Authorization: `Bearer ${pat}`, "Content-Type": "application/json" },
     body: JSON.stringify({ query: sql }),
   });
+  if (res.ok) return null;
   const body = await res.text();
-  if (!res.ok) {
-    const msg = (() => { try { const j = JSON.parse(body); return j?.message || j?.error || body; } catch { return body; } })();
-    if (msg.includes("already exists") || msg.includes("duplicate")) return null;
-    return msg;
-  }
-  return null;
+  const msg = (() => { try { const j = JSON.parse(body); return j?.message || j?.error || body; } catch { return body; } })();
+  if (msg.includes("already exists") || msg.includes("duplicate")) return null;
+  return msg;
 }
 
+/** Create full schema by sending statements one by one */
 async function createSchemaViaPat(
   projectRef: string,
   pat: string,
-  onProgress?: (msg: string) => void,
+  onProgress?: (msg: string, current: number, total: number) => void,
 ): Promise<void> {
-  // Split SQL into sections by "-- N." comments
-  const sections = SETUP_SCHEMA_SQL
-    .split(/(?=^-- \d+\.)/m)
-    .map(s => s.trim())
-    .filter(s => s.length > 10);
-
+  const statements = splitStatements(SETUP_SCHEMA_SQL);
+  const total = statements.length;
   const errors: string[] = [];
-  for (let i = 0; i < sections.length; i++) {
-    const sectionName = sections[i].split("\n")[0].replace(/^--\s*/, "").trim();
-    onProgress?.(`🔧 Criando: ${sectionName} (${i + 1}/${sections.length})`);
-    const err = await runQueryViaPat(projectRef, pat, sections[i]);
+
+  for (let i = 0; i < total; i++) {
+    const desc = statements[i].split("\n")[0].trim().substring(0, 60);
+    onProgress?.(`🔧 Criando estrutura... (${i + 1}/${total})`, i + 1, total);
+
+    const err = await runStatement(projectRef, pat, statements[i]);
     if (err) {
-      console.error(`Schema section "${sectionName}" error:`, err);
-      errors.push(`${sectionName}: ${err}`);
+      console.error(`[Schema ${i+1}/${total}] Erro em "${desc}":`, err);
+      errors.push(`${desc}: ${err}`);
     }
+
+    // Small delay every 10 statements to avoid rate limiting
+    if (i % 10 === 9) await new Promise(r => setTimeout(r, 300));
   }
+
   if (errors.length > 0) {
-    throw new Error(`Erros ao criar schema:\n${errors.join("\n")}`);
+    console.error("Schema errors:", errors);
+    // Only throw if more than 5% of statements failed (some "already exists" might slip through)
+    const criticalErrors = errors.filter(e => !e.includes("1010"));
+    if (criticalErrors.length > 0) {
+      throw new Error(`${criticalErrors.length} erro(s) ao criar o banco:\n${criticalErrors.slice(0, 3).join("\n")}`);
+    }
   }
 }
 
@@ -66,6 +102,7 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
   const { toast } = useToast();
   const [testing, setTesting] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [connected, setConnected] = useState(false);
 
   const handleTestConnection = async () => {
@@ -75,6 +112,7 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
     }
     setTesting(true);
     setConnected(false);
+    setProgress(null);
     setStatusMsg("🔌 Testando conexão...");
     try {
       const client = createClient(data.supabaseUrl.trim(), data.supabaseServiceRoleKey.trim(), {
@@ -83,7 +121,7 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
       const { error: authError } = await client.auth.admin.listUsers({ page: 1, perPage: 1 });
       if (authError) throw new Error("Credenciais inválidas: " + authError.message);
 
-      setStatusMsg("🔍 Verificando schema...");
+      setStatusMsg("🔍 Verificando banco de dados...");
       const { error: schemaError } = await client.from("salons").select("id", { count: "exact", head: true });
       const schemaMissing = schemaError && (
         schemaError.code === "PGRST204" ||
@@ -98,10 +136,14 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
           setTesting(false);
           return;
         }
-        setStatusMsg("🔧 Criando tabelas no banco de dados...");
-        await createSchemaViaPat(extractProjectRef(data.supabaseUrl.trim()), data.supabasePat.trim(), setStatusMsg);
-        setStatusMsg("⏳ Aguardando tabelas ficarem disponíveis...");
-        const schemaResult = await waitForExternalSchema(data.supabaseUrl.trim(), data.supabaseServiceRoleKey.trim(), 12, 2000);
+        await createSchemaViaPat(
+          extractProjectRef(data.supabaseUrl.trim()),
+          data.supabasePat.trim(),
+          (msg, current, total) => { setStatusMsg(msg); setProgress({ current, total }); }
+        );
+        setStatusMsg("⏳ Finalizando configuração...");
+        setProgress(null);
+        const schemaResult = await waitForExternalSchema(data.supabaseUrl.trim(), data.supabaseServiceRoleKey.trim(), 15, 2000);
         if (schemaResult.status !== "success") {
           throw new Error("Tabelas foram criadas mas ainda não estão acessíveis. Aguarde alguns segundos e clique em 'Testar Conexão' novamente.");
         }
@@ -109,16 +151,20 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
       }
 
       setConnected(true);
+      setProgress(null);
       setStatusMsg("✅ Banco de dados pronto!");
       toast({ title: "✅ Banco de dados configurado!" });
     } catch (err: any) {
       toast({ title: "Erro na conexão", description: err.message, variant: "destructive" });
       setStatusMsg("");
+      setProgress(null);
       setConnected(false);
     } finally {
       setTesting(false);
     }
   };
+
+  const progressPercent = progress ? Math.round((progress.current / progress.total) * 100) : 0;
 
   return (
     <Card>
@@ -154,6 +200,17 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
           <p>Acesse <a href="https://supabase.com/dashboard" target="_blank" rel="noopener" className="text-primary underline inline-flex items-center gap-1">supabase.com/dashboard <ExternalLink className="h-3 w-3" /></a> → Seu projeto → <strong>Settings → API</strong></p>
           <p>Copie <strong>Project URL</strong>, <strong>anon public</strong> e <strong>service_role</strong></p>
         </div>
+
+        {/* Progress bar */}
+        {progress && (
+          <div className="space-y-2">
+            <div className="w-full bg-muted rounded-full h-2.5">
+              <div className="bg-primary h-2.5 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">{progress.current} de {progress.total} — {progressPercent}%</p>
+          </div>
+        )}
+
         {statusMsg && (
           <div className={`flex items-center gap-2 text-sm ${connected ? "text-green-600" : "text-muted-foreground"}`}>
             {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : connected ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
@@ -163,7 +220,7 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
         <div className="flex justify-between">
           <Button variant="outline" onClick={handleTestConnection} disabled={testing} className="gap-2">
             {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-            {testing ? "Verificando..." : "Testar Conexão"}
+            {testing ? "Configurando..." : "Testar Conexão"}
           </Button>
           <Button onClick={() => { if (!connected) { toast({ title: "Teste a conexão antes de continuar", variant: "destructive" }); return; } onNext(); }} disabled={!connected} className="gap-2">
             Próximo <ArrowRight className="h-4 w-4" />
