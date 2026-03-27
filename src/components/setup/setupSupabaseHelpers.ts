@@ -15,9 +15,11 @@ export const isMissingSchemaError = (error: { message?: string | null; code?: st
   Boolean(
     error &&
       (error.code === "PGRST204" ||
+        error.code === "PGRST205" ||
+        error.code === "42P01" ||
         error.message?.includes("schema cache") ||
         error.message?.includes("relation") ||
-        error.message?.includes("Could not find the table"))
+        error.message?.includes("Could not find"))
   );
 
 export async function checkExternalSchema(url: string, serviceRoleKey: string) {

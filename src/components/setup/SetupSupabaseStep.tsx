@@ -125,6 +125,8 @@ export default function SetupSupabaseStep({ data, updateData, onNext }: Props) {
       const { error: schemaError } = await client.from("salons").select("id", { count: "exact", head: true });
       const schemaMissing = schemaError && (
         schemaError.code === "PGRST204" ||
+        schemaError.code === "PGRST205" ||
+        schemaError.code === "42P01" ||
         schemaError.message?.includes("relation") ||
         schemaError.message?.includes("Could not find")
       );
