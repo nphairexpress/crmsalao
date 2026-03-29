@@ -54,6 +54,31 @@ export default function Clientes() {
     { key: "notes", label: "Observações" },
   ];
 
+  const parseBirthDate = (value: any): string | null => {
+    if (!value) return null;
+    const str = String(value).trim();
+    // DD/MM/YYYY or DD-MM-YYYY
+    const brMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (brMatch) {
+      const [, day, month, year] = brMatch;
+      const y = parseInt(year);
+      if (y < 1900 || y > 2100) return null;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    // YYYY-MM-DD (already correct)
+    const isoMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (isoMatch) return str;
+    // Excel serial date number
+    if (/^\d{4,5}$/.test(str)) {
+      const serial = parseInt(str);
+      const date = new Date((serial - 25569) * 86400 * 1000);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    }
+    return null;
+  };
+
   const handleImportClients = async (records: Record<string, any>[]) => {
     if (!salonId) throw new Error("Salão não encontrado");
     const rows = records.map(r => ({
@@ -64,7 +89,7 @@ export default function Clientes() {
       phone_landline: r.phone_landline ? String(r.phone_landline) : null,
       cpf: r.cpf ? String(r.cpf) : null,
       rg: r.rg ? String(r.rg) : null,
-      birth_date: r.birth_date ? String(r.birth_date) : null,
+      birth_date: parseBirthDate(r.birth_date),
       gender: r.gender ? String(r.gender).toLowerCase() : null,
       cep: r.cep ? String(r.cep) : null,
       state: r.state ? String(r.state) : null,
