@@ -89,9 +89,13 @@ export function useClients() {
   const createMutation = useMutation({
     mutationFn: async (input: ClientInput) => {
       if (!salonId) throw new Error("Salão não encontrado");
+      const cleaned: Record<string, any> = { salon_id: salonId };
+      for (const [key, value] of Object.entries(input)) {
+        cleaned[key] = (value === "" || value === undefined) ? null : value;
+      }
       const { data, error } = await supabase
         .from("clients")
-        .insert({ ...input, salon_id: salonId })
+        .insert(cleaned)
         .select()
         .single();
       if (error) throw error;
