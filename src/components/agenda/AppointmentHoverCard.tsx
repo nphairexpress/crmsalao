@@ -6,6 +6,8 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
 import { Appointment } from "@/hooks/useAppointments";
 
 interface AppointmentHoverCardProps {
@@ -33,8 +35,24 @@ const statusBadgeColors: Record<string, string> = {
   cancelled: "bg-[#6b7280] hover:bg-[#6b7280]",
 };
 
+function buildWhatsAppUrl(appointment: Appointment): string | null {
+  const phone = appointment.clients?.phone;
+  if (!phone) return null;
+  const cleanPhone = phone.replace(/\D/g, "");
+  const phoneWithCountry = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+  const scheduledDate = new Date(appointment.scheduled_at);
+  const dateStr = format(scheduledDate, "dd/MM/yyyy", { locale: ptBR });
+  const timeStr = format(scheduledDate, "HH:mm", { locale: ptBR });
+  const clientName = appointment.clients?.name || "Cliente";
+  const serviceName = appointment.services?.name || "seu horário";
+  const professionalName = appointment.professionals?.name || "nossa equipe";
+  const message = `Olá ${clientName}! 😊 Confirmando seu horário no NP Hair Studio: ${serviceName} dia ${dateStr} às ${timeStr} com ${professionalName}. Te esperamos! 💇‍♀️`;
+  return `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
+}
+
 export function AppointmentHoverCard({ appointment, children }: AppointmentHoverCardProps) {
   const scheduledDate = new Date(appointment.scheduled_at);
+  const whatsappUrl = buildWhatsAppUrl(appointment);
   
   return (
     <HoverCard openDelay={200} closeDelay={100}>
@@ -86,6 +104,21 @@ export function AppointmentHoverCard({ appointment, children }: AppointmentHover
               </p>
             )}
           </div>
+
+          {/* WhatsApp Button */}
+          {whatsappUrl && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 text-green-600 border-green-300 hover:bg-green-50 hover:text-green-700"
+              asChild
+            >
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="h-4 w-4" />
+                Enviar WhatsApp
+              </a>
+            </Button>
+          )}
         </div>
       </HoverCardContent>
     </HoverCard>

@@ -3,6 +3,9 @@ import { supabase } from "@/lib/dynamicSupabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
+import { sendEmail } from "@/lib/sendEmail";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type AppointmentStatus = Database["public"]["Enums"]["appointment_status"];
 
@@ -80,15 +83,43 @@ export function useAppointments(date?: Date) {
       const { data, error } = await supabase
         .from("appointments")
         .insert({ ...input, salon_id: salonId })
-        .select()
+        .select(`
+          *,
+          clients(name, phone, email),
+          professionals(name),
+          services(name)
+        `)
         .single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate all appointment queries regardless of date
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: "Agendamento criado com sucesso!" });
+
+      // Send confirmation email (fire-and-forget, don't block UI)
+      const client = (data as any).clients;
+      const professional = (data as any).professionals;
+      const service = (data as any).services;
+      if (client?.email && salonId) {
+        const scheduledDate = new Date(data.scheduled_at);
+        sendEmail({
+          type: "appointment_confirmation",
+          salon_id: salonId,
+          to_email: client.email,
+          to_name: client.name || "Cliente",
+          client_id: data.client_id || undefined,
+          variables: {
+            service_name: service?.name || "Não informado",
+            professional_name: professional?.name || "Não informado",
+            date: format(scheduledDate, "dd/MM/yyyy", { locale: ptBR }),
+            time: format(scheduledDate, "HH:mm", { locale: ptBR }),
+          },
+        }).catch((err) => {
+          console.error("Erro ao enviar e-mail de confirmação:", err);
+        });
+      }
     },
     onError: (error: Error) => {
       toast({ title: "Erro ao criar agendamento", description: error.message, variant: "destructive" });

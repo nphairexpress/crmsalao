@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder";
+  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_confirmation" | "appointment_reminder";
   salon_id: string;
   to_email: string;
   to_name: string;
@@ -202,6 +202,32 @@ function buildEmailContent(
         <p>Nossos profissionais estão prontos para deixar você incrível novamente! 💅✨</p>
         <p style="margin-top:24px;">Esperamos você!<br/><strong>${salonName}</strong> 💜</p>`;
       return { subject, html: generateHtml(logoUrl, salonName, "Hora de Retornar! 💇", body, subject) };
+    }
+
+    case "appointment_confirmation": {
+      const subject = `✅ Agendamento confirmado no ${salonName}!`;
+      const body = `
+        <p>Olá <strong>${name}</strong>! 👋</p>
+        <p>Seu agendamento foi confirmado com sucesso! Confira os detalhes:</p>
+        ${highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#6366f1")}
+        ${highlightBox(`<strong>Data:</strong> ${vars.date} às <strong>${vars.time}</strong>`, "📅", "#10b981")}
+        ${highlightBox(`<strong>Profissional:</strong> ${vars.professional_name || "Não informado"}`, "👤", "#3b82f6")}
+        <p>Estamos te esperando! Caso precise remarcar, entre em contato conosco. 😊</p>
+        <p style="margin-top:24px;">Com carinho,<br/><strong>${salonName}</strong> 💜</p>`;
+      return { subject, html: generateHtml(logoUrl, salonName, "Agendamento Confirmado! ✅", body, subject) };
+    }
+
+    case "appointment_reminder": {
+      const subject = `⏰ Lembrete: seu horário amanhã no ${salonName}!`;
+      const body = `
+        <p>Olá <strong>${name}</strong>! 👋</p>
+        <p>Passando para lembrar do seu agendamento de <strong>amanhã</strong>:</p>
+        ${highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#6366f1")}
+        ${highlightBox(`<strong>Data:</strong> ${vars.date} às <strong>${vars.time}</strong>`, "📅", "#f59e0b")}
+        ${highlightBox(`<strong>Profissional:</strong> ${vars.professional_name || "Não informado"}`, "👤", "#3b82f6")}
+        <p>Te esperamos! Caso precise remarcar, entre em contato conosco com antecedência. 🙏</p>
+        <p style="margin-top:24px;">Até amanhã!<br/><strong>${salonName}</strong> 💜</p>`;
+      return { subject, html: generateHtml(logoUrl, salonName, "Lembrete de Agendamento! ⏰", body, subject) };
     }
 
     case "campaign": {

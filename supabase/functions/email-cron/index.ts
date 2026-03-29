@@ -101,7 +101,74 @@ serve(async (req) => {
       }
       results.push({ type: "birthday", sent: birthdaySent, errors: birthdayErrors });
 
-      // ============ 2. EXPIRING CASHBACK (3 days) ============
+      // ============ 2. APPOINTMENT REMINDERS (24h before) ============
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStart = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 0, 0, 0).toISOString();
+      const tomorrowEnd = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59, 999).toISOString();
+
+      const { data: tomorrowAppointments } = await supabase
+        .from("appointments")
+        .select(`
+          id, client_id, scheduled_at,
+          clients(id, name, email, allow_email_campaigns),
+          professionals(name),
+          services(name)
+        `)
+        .eq("salon_id", salonId)
+        .in("status", ["scheduled", "confirmed"])
+        .gte("scheduled_at", tomorrowStart)
+        .lte("scheduled_at", tomorrowEnd);
+
+      let appointmentReminderSent = 0, appointmentReminderErrors = 0;
+      for (const appt of tomorrowAppointments || []) {
+        const client = appt.clients as any;
+        if (!client?.email || !client?.allow_email_campaigns) continue;
+
+        // Check if already sent today
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+        const { data: existing } = await supabase
+          .from("email_logs")
+          .select("id")
+          .eq("salon_id", salonId)
+          .eq("client_id", client.id)
+          .eq("email_type", "appointment_reminder")
+          .gte("created_at", todayStart)
+          .limit(1);
+
+        if (existing && existing.length > 0) continue;
+
+        const scheduledAt = new Date(appt.scheduled_at);
+        const dateStr = `${String(scheduledAt.getDate()).padStart(2, "0")}/${String(scheduledAt.getMonth() + 1).padStart(2, "0")}/${scheduledAt.getFullYear()}`;
+        const timeStr = `${String(scheduledAt.getHours()).padStart(2, "0")}:${String(scheduledAt.getMinutes()).padStart(2, "0")}`;
+
+        const res = await fetch(sendEmailUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            type: "appointment_reminder",
+            salon_id: salonId,
+            to_email: client.email,
+            to_name: client.name,
+            client_id: client.id,
+            variables: {
+              service_name: (appt.services as any)?.name || "Não informado",
+              professional_name: (appt.professionals as any)?.name || "Não informado",
+              date: dateStr,
+              time: timeStr,
+            },
+          }),
+        });
+        if (res.ok) appointmentReminderSent++;
+        else appointmentReminderErrors++;
+        await res.text();
+      }
+      results.push({ type: "appointment_reminder", sent: appointmentReminderSent, errors: appointmentReminderErrors });
+
+      // ============ 3. EXPIRING CASHBACK (3 days) ============
       const threeDaysLater = new Date(today);
       threeDaysLater.setDate(threeDaysLater.getDate() + 3);
       const threeDaysStr = threeDaysLater.toISOString().split("T")[0];
@@ -159,7 +226,7 @@ serve(async (req) => {
       }
       results.push({ type: "expiring", sent: expiringSent, errors: expiringErrors });
 
-      // ============ 3. RETURN REMINDERS ============
+      // ============ 4. RETURN REMINDERS ============
       const { data: reminderServices } = await supabase
         .from("services")
         .select("id, name, return_reminder_days, return_reminder_message")
