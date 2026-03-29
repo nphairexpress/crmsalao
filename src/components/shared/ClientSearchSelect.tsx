@@ -117,7 +117,7 @@ export function ClientSearchSelect({
               <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
             ) : (
               <CommandGroup>
-                {filteredClients.slice(0, 10).map((client) => (
+                {filteredClients.slice(0, 50).map((client) => (
                   <CommandItem
                     key={client.id}
                     value={client.id}
