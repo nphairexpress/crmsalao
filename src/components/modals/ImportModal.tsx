@@ -160,7 +160,10 @@ export function ImportModal({ open, onOpenChange, title, description, fields, on
         {/* Step 1: Upload */}
         {step === "upload" && (
           <div className="flex flex-col items-center justify-center py-10 gap-4">
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-10 text-center w-full">
+            <div
+              className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-10 text-center w-full relative cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
               <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground mb-1">Arraste um arquivo ou clique para selecionar</p>
               <p className="text-xs text-muted-foreground">Formatos aceitos: .xlsx, .xls, .csv</p>
@@ -168,9 +171,8 @@ export function ImportModal({ open, onOpenChange, title, description, fields, on
                 ref={fileInputRef}
                 type="file"
                 accept=".xlsx,.xls,.csv"
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                className="hidden"
                 onChange={handleFileSelect}
-                style={{ position: "relative", marginTop: 12 }}
               />
             </div>
           </div>
