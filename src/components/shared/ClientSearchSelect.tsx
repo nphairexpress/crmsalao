@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, Plus, Search, User } from "lucide-react";
+import { Check, Plus, Search, User, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Client {
@@ -17,6 +17,7 @@ interface ClientSearchSelectProps {
   value: string | null;
   onSelect: (clientId: string | null) => void;
   onCreateNew?: (name: string) => void;
+  onViewClient?: (clientId: string) => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -26,6 +27,7 @@ export function ClientSearchSelect({
   value,
   onSelect,
   onCreateNew,
+  onViewClient,
   placeholder = "Buscar cliente...",
   disabled = false,
 }: ClientSearchSelectProps) {
@@ -94,19 +96,36 @@ export function ClientSearchSelect({
             className="pl-9 pr-10"
           />
           {selectedClient && !open && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(null);
-                setSearch("");
-              }}
-            >
-              ×
-            </Button>
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+              {onViewClient && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  title="Ver cadastro"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewClient(selectedClient.id);
+                  }}
+                >
+                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(null);
+                  setSearch("");
+                }}
+              >
+                ×
+              </Button>
+            </div>
           )}
         </div>
       </PopoverTrigger>

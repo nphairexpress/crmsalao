@@ -74,7 +74,7 @@ export default function Agenda() {
   const queryClient = useQueryClient();
   const { appointments, isLoading: appointmentsLoading, createAppointment, updateAppointment, isCreating, isUpdating } = useAppointments(currentDate);
   const { professionals, isLoading: professionalsLoading } = useProfessionals();
-  const { clients, createClient } = useClients();
+  const { clients, createClient, updateClient } = useClients();
   const { services } = useServices();
   const { settings: schedulingSettings } = useSchedulingSettings();
   const { scheduleMap } = useAllProfessionalSchedules();
@@ -217,18 +217,37 @@ export default function Agenda() {
     }
   };
 
+  const [viewClientId, setViewClientId] = useState<string | null>(null);
+
   const handleCreateClient = (name: string) => {
     setPendingClientName(name);
     setClientModalOpen(true);
   };
 
+  const handleViewClient = (clientId: string) => {
+    setViewClientId(clientId);
+    setClientModalOpen(true);
+  };
+
+  const viewClient = viewClientId ? clients.find(c => c.id === viewClientId) : null;
+
   const handleClientSubmit = (data: any) => {
-    createClient(data, {
-      onSuccess: () => {
-        setClientModalOpen(false);
-        setPendingClientName("");
-      }
-    });
+    if (viewClientId) {
+      updateClient({ ...data, id: viewClientId }, {
+        onSuccess: () => {
+          setClientModalOpen(false);
+          setViewClientId(null);
+        }
+      });
+    } else {
+      createClient(data, {
+        onSuccess: () => {
+          setClientModalOpen(false);
+          setPendingClientName("");
+          setViewClientId(null);
+        }
+      });
+    }
   };
 
   const handleBlockTime = async (data: BlockTimeData) => {
@@ -692,6 +711,7 @@ export default function Agenda() {
         defaultDate={getDefaultDateWithTime()}
         defaultProfessionalId={selectedSlot?.professionalId}
         onCreateClient={handleCreateClient}
+        onViewClient={handleViewClient}
       />
 
       <BlockTimeModal
@@ -707,9 +727,13 @@ export default function Agenda() {
 
       <ClientModal
         open={clientModalOpen}
-        onOpenChange={setClientModalOpen}
+        onOpenChange={(open) => {
+          setClientModalOpen(open);
+          if (!open) { setViewClientId(null); setPendingClientName(""); }
+        }}
         onSubmit={handleClientSubmit}
         initialName={pendingClientName}
+        client={viewClient || undefined}
       />
     </AppLayoutNew>
   );

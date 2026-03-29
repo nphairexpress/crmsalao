@@ -39,6 +39,7 @@ interface AppointmentModalProps {
   defaultProfessionalId?: string;
   onOpenComanda?: (appointmentId: string) => void;
   onCreateClient?: (name: string) => void;
+  onViewClient?: (clientId: string) => void;
 }
 
 export function AppointmentModal({
@@ -54,6 +55,7 @@ export function AppointmentModal({
   defaultProfessionalId,
   onOpenComanda,
   onCreateClient,
+  onViewClient,
 }: AppointmentModalProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<AppointmentInput & { date: string; time: string }>({
@@ -206,6 +208,7 @@ export function AppointmentModal({
               value={formData.client_id || null}
               onSelect={(clientId) => setFormData({ ...formData, client_id: clientId || "" })}
               onCreateNew={onCreateClient}
+              onViewClient={onViewClient}
               placeholder="Buscar cliente..."
             />
             {!formData.client_id && (
