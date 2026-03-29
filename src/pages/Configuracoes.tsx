@@ -35,7 +35,7 @@ import {
 import {
   Shield, Users, Settings, MoreHorizontal, Trash2, Loader2, Building2,
   CreditCard, Plus, Pencil, Landmark, ArrowRightLeft, Lock, Cog, UserCog,
-  Save, Calendar, Clock, ToggleLeft, ChevronRight, Home, DollarSign, Percent, Package, Webhook, Globe, Mail
+  Save, Calendar, Clock, ToggleLeft, ChevronRight, Home, DollarSign, Percent, Package, Webhook, Globe, Mail, ShieldAlert
 } from "lucide-react";
 import { CommissionSettingsPage } from "@/components/settings/CommissionSettingsPage";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
@@ -59,6 +59,7 @@ import { useSchedulingSettings, SchedulingSettings } from "@/hooks/useScheduling
 import { WebhookSettingsSection } from "@/components/settings/WebhookSettingsSection";
 import { ApiGatewaySettingsSection } from "@/components/settings/ApiGatewaySettingsSection";
 import { ResendSettingsSection } from "@/components/settings/ResendSettingsSection";
+import { AuditLogSection } from "@/components/settings/AuditLogSection";
 
 const SPECIALTIES = [
   { value: "cabeleireiro", label: "Cabeleireiro(a)" },
@@ -588,6 +589,7 @@ export default function Configuracoes() {
     if (path.startsWith("/configuracoes/webhook")) return "webhook";
     if (path.startsWith("/configuracoes/api")) return "api";
     if (path.startsWith("/configuracoes/email")) return "email";
+    if (path.startsWith("/configuracoes/auditoria")) return "auditoria";
     if (path.startsWith("/configuracoes/salao")) return "hub";
     return "hub";
   })();
@@ -733,6 +735,14 @@ export default function Configuracoes() {
                 description="Configure o Resend para envio de e-mails automáticos aos clientes"
                 onClick={() => navigate("/configuracoes/email")}
               />
+              {isMaster && (
+                <SettingsCard
+                  icon={ShieldAlert}
+                  title="Auditoria"
+                  description="Registros de exclusões, alterações e ações críticas do sistema"
+                  onClick={() => navigate("/configuracoes/auditoria")}
+                />
+              )}
             </div>
           </>
         )}
@@ -1172,6 +1182,14 @@ export default function Configuracoes() {
             <SettingsBreadcrumb label="E-mails Automáticos" />
             <h1 className="text-2xl font-bold tracking-tight">E-mails Automáticos</h1>
             <ResendSettingsSection />
+          </>
+        )}
+
+        {/* ===== AUDITORIA ===== */}
+        {subPage === "auditoria" && isMaster && (
+          <>
+            <SettingsBreadcrumb label="Auditoria" />
+            <AuditLogSection />
           </>
         )}
       </div>

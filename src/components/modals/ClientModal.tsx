@@ -545,7 +545,7 @@ export function ClientModal({ open, onOpenChange, client, onSubmit, isLoading, i
                   <ClientPackagesTab clientId={client.id} clientName={client.name} />
                 ) : (
                   <div className="flex items-center justify-center h-40 text-muted-foreground">
-                    <p>Salve o cliente primeiro para gerenciar pacotes.</p>
+                    <p>Salve o cliente primeiro para ver pacotes.</p>
                   </div>
                 )}
               </TabsContent>
