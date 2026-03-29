@@ -89,28 +89,18 @@ export function useAppointments(date?: Date) {
       const { data, error } = await supabase
         .from("appointments")
         .insert({ ...input, salon_id: salonId })
-        .select(`
-          *,
-          clients(name, phone, email),
-          professionals(name),
-          services(name)
-        `)
+        .select("*")
         .single();
       if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast({ title: "Agendamento criado com sucesso!" });
 
-      // Send confirmation email
+      // Send confirmation email (inside mutationFn to guarantee execution)
       try {
-        const client = (data as any)?.clients;
-        const professional = (data as any)?.professionals;
-        const service = (data as any)?.services;
-        if (client?.email && salonId) {
+        const { data: client } = await supabase.from("clients").select("name, email").eq("id", data.client_id).single();
+        const { data: service } = await supabase.from("services").select("name").eq("id", data.service_id).single();
+        const { data: prof } = await supabase.from("professionals").select("name").eq("id", data.professional_id).single();
+        if (client?.email) {
           const scheduledDate = new Date(data.scheduled_at);
-          sendEmail({
+          await sendEmail({
             type: "appointment_confirmation",
             salon_id: salonId,
             to_email: client.email,
@@ -118,13 +108,19 @@ export function useAppointments(date?: Date) {
             client_id: data.client_id || undefined,
             variables: {
               service_name: service?.name || "Não informado",
-              professional_name: professional?.name || "Não informado",
+              professional_name: prof?.name || "Não informado",
               date: format(scheduledDate, "dd/MM/yyyy", { locale: ptBR }),
               time: format(scheduledDate, "HH:mm"),
             },
           }).catch(console.error);
         }
       } catch (e) { console.error("Email error:", e); }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast({ title: "Agendamento criado com sucesso!" });
     },
     onError: (error: Error) => {
       toast({ title: "Erro ao criar agendamento", description: error.message, variant: "destructive" });
@@ -138,47 +134,53 @@ export function useAppointments(date?: Date) {
       const { data, error } = await supabase
         .from("appointments")
         .insert(rows)
-        .select(`
-          *,
-          clients(name, phone, email),
-          professionals(name),
-          services(name)
-        `);
+        .select("*");
       if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast({ title: `${data.length} agendamento(s) criado(s) com sucesso!` });
 
-      // Send confirmation email with ALL services listed
+      // Send confirmation email with ALL services
       try {
         if (data.length > 0) {
-          const first = data[0] as any;
-          const client = first.clients;
-          if (client?.email && salonId) {
-            const scheduledDate = new Date(first.scheduled_at);
-            const servicesList = data.map((a: any) => {
-              const t = format(new Date(a.scheduled_at), "HH:mm");
-              return `${a.services?.name || "Serviço"} às ${t}`;
-            }).join("\n");
+          const first = data[0];
+          const { data: client } = await supabase.from("clients").select("name, email").eq("id", first.client_id).single();
+          if (client?.email) {
+            // Fetch service names for all appointments
+            const serviceNames = [];
+            for (const appt of data) {
+              const { data: svc } = await supabase.from("services").select("name").eq("id", appt.service_id).single();
+              const t = format(new Date(appt.scheduled_at), "HH:mm");
+              serviceNames.push(`${svc?.name || "Serviço"} às ${t}`);
+            }
 
-            sendEmail({
+            const scheduledDate = new Date(first.scheduled_at);
+            const profText = data.length > 1 ? "Equipe do salão" : undefined;
+            if (!profText) {
+              var { data: prof } = await supabase.from("professionals").select("name").eq("id", first.professional_id).single();
+            }
+
+            await sendEmail({
               type: "appointment_confirmation",
               salon_id: salonId,
               to_email: client.email,
               to_name: client.name || "Cliente",
               client_id: first.client_id || undefined,
               variables: {
-                service_name: servicesList,
-                professional_name: data.length > 1 ? "Equipe do salão" : (first.professionals?.name || "Não informado"),
+                service_name: serviceNames.join("\n"),
+                professional_name: profText || prof?.name || "Não informado",
                 date: format(scheduledDate, "dd/MM/yyyy", { locale: ptBR }),
-                time: data.length > 1 ? data.map((a: any) => format(new Date(a.scheduled_at), "HH:mm")).join(", ") : format(scheduledDate, "HH:mm"),
+                time: data.length > 1
+                  ? data.map(a => format(new Date(a.scheduled_at), "HH:mm")).join(", ")
+                  : format(scheduledDate, "HH:mm"),
               },
             }).catch(console.error);
           }
         }
       } catch (e) { console.error("Email error:", e); }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast({ title: `${data.length} agendamento(s) criado(s) com sucesso!` });
     },
     onError: (error: Error) => {
       toast({ title: "Erro ao criar agendamentos", description: error.message, variant: "destructive" });
