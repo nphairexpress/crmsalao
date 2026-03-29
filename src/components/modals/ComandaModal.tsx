@@ -262,18 +262,76 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
     // Calculate product cost for this service
     const productCost = calculateServiceCost(serviceId);
 
+    // Check if client has an active package with credits for this service
+    let usedPackageCredit = false;
+    let packageLabel = "";
+    if (comanda.client_id) {
+      try {
+        // Get active client packages that contain this service
+        const { data: clientPackages } = await supabase
+          .from("client_packages")
+          .select("id, package_id, package:packages(name), items:package_items!inner(service_id, quantity)")
+          .eq("client_id", comanda.client_id)
+          .eq("salon_id", salonId)
+          .eq("status", "active")
+          .eq("items.service_id", serviceId);
+
+        if (clientPackages && clientPackages.length > 0) {
+          // For each client package, check usage count
+          for (const cp of clientPackages) {
+            const pkgItem = (cp.items || []).find((i: any) => i.service_id === serviceId);
+            if (!pkgItem) continue;
+            const totalCredits = pkgItem.quantity;
+
+            // Count existing usage for this service in this package
+            const { count: usageCount } = await supabase
+              .from("client_package_usage")
+              .select("id", { count: "exact", head: true })
+              .eq("client_package_id", cp.id)
+              .eq("service_id", serviceId);
+
+            const used = usageCount || 0;
+            if (used < totalCredits) {
+              // Has remaining credits — register usage
+              await supabase.from("client_package_usage").insert({
+                client_package_id: cp.id,
+                service_id: serviceId,
+                comanda_id: comanda.id,
+                professional_id: comanda.professional_id || null,
+                notes: `Uso automático via comanda #${comanda.id.slice(0, 8)}`,
+              });
+
+              const pkgName = (cp as any).package?.name || "Pacote";
+              packageLabel = `📦 ${pkgName} (${used + 1}/${totalCredits})`;
+              usedPackageCredit = true;
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao verificar pacotes do cliente:", e);
+      }
+    }
+
+    const finalPrice = usedPackageCredit ? 0 : Number(service.price);
+    const description = usedPackageCredit ? `${service.name} — ${packageLabel}` : service.name;
+
     // Add item to comanda with product cost and professional
     addItem({
       comanda_id: comanda.id,
       service_id: serviceId,
       professional_id: comanda.professional_id || null,
-      description: service.name,
+      description: description,
       item_type: "service",
       quantity: 1,
-      unit_price: Number(service.price),
-      total_price: Number(service.price),
+      unit_price: finalPrice,
+      total_price: finalPrice,
       product_cost: productCost,
     });
+
+    if (usedPackageCredit) {
+      toast({ title: "Crédito de pacote utilizado", description: packageLabel });
+    }
 
     // Create appointment for this service if comanda has a professional
     const professionalId = comanda.professional_id;
@@ -291,9 +349,11 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             service_id: serviceId,
             scheduled_at: now.toISOString(),
             duration_minutes: service.duration_minutes || 30,
-            price: Number(service.price),
+            price: finalPrice,
             status: "in_progress",
-            notes: `Criado via comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
+            notes: usedPackageCredit
+              ? `Criado via comanda ${comanda.id.slice(0, 4).toUpperCase()} — ${packageLabel}`
+              : `Criado via comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
           });
 
         if (error) {
@@ -902,7 +962,12 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                             <TableRow className="border-b-0">
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
-                                  <span>{item.description}</span>
+                                  <span>{item.description?.includes("📦") ? item.description.split(" — ")[0] : item.description}</span>
+                                  {item.description?.includes("📦") && (
+                                    <Badge variant="secondary" className="text-xs whitespace-nowrap bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                                      {item.description.split(" — ")[1]}
+                                    </Badge>
+                                  )}
                                   {item.service_id && (
                                     <Button
                                       variant="ghost"
