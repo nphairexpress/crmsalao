@@ -707,6 +707,8 @@ CREATE POLICY "Users can view roles in their salon" ON public.user_roles FOR SEL
 
 -- system_config
 CREATE POLICY "Authenticated users can read system config" ON public.system_config FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated users can insert system config" ON public.system_config FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Authenticated users can update system config" ON public.system_config FOR UPDATE TO authenticated USING (true);
 
 -- clients
 CREATE POLICY "Users can view clients in their salon" ON public.clients FOR SELECT TO authenticated USING (salon_id = get_user_salon_id(auth.uid()));
