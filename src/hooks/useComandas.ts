@@ -176,15 +176,22 @@ export function useComandas() {
       return existingComanda as Comanda;
     }
 
-    // No existing comanda, create a new one
+    // No existing comanda, create a new one (use targetDate if provided)
+    const insertData: any = {
+      salon_id: salonId,
+      client_id: clientId,
+      professional_id: professionalId || null,
+      appointment_id: appointmentId || null,
+    };
+    if (targetDate) {
+      // Set created_at to match the target date (noon to avoid timezone issues)
+      const d = new Date(targetDate);
+      d.setHours(12, 0, 0, 0);
+      insertData.created_at = d.toISOString();
+    }
     const { data: newComanda, error: createError } = await supabase
       .from("comandas")
-      .insert({
-        salon_id: salonId,
-        client_id: clientId,
-        professional_id: professionalId || null,
-        appointment_id: appointmentId || null,
-      })
+      .insert(insertData)
       .select(`
         *,
         client:clients(id, name),

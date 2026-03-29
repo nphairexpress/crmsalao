@@ -53,6 +53,7 @@ export default function Comandas() {
     client_id: null,
     professional_id: null,
   });
+  const [comandaDate, setComandaDate] = useState("");
   const [selectedComanda, setSelectedComanda] = useState<Comanda | null>(null);
   const [comandaModalOpen, setComandaModalOpen] = useState(false);
   const [isProcessingAppointment, setIsProcessingAppointment] = useState(false);
@@ -64,7 +65,7 @@ export default function Comandas() {
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
 
-  const { user, salonId } = useAuth();
+  const { user, salonId, isMaster } = useAuth();
   const queryClient = useQueryClient();
   const { comandas, isLoading, createComanda, findOrCreateTodayComanda, isCreating } = useComandas();
   const { clients, createClient } = useClients();
@@ -306,21 +307,55 @@ export default function Comandas() {
   });
 
   const handleCreate = async () => {
-    // Check if user has open caixa
-    const userCaixa = await getCurrentUserOpenCaixa();
+    // Determine target date (master can pick a date)
+    const targetDate = comandaDate ? new Date(comandaDate + "T12:00:00") : new Date();
+    const isToday = isSameDay(targetDate, new Date());
+
+    // Find appropriate caixa
+    let userCaixa: any = null;
+    if (isToday) {
+      userCaixa = await getCurrentUserOpenCaixa();
+    } else {
+      // Past date: find open caixa for that day
+      const dayStart = new Date(targetDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+
+      const { data: pastCaixa } = await supabase
+        .from("caixas")
+        .select("*")
+        .eq("salon_id", salonId)
+        .is("closed_at", null)
+        .gte("opened_at", dayStart.toISOString())
+        .lt("opened_at", dayEnd.toISOString())
+        .limit(1)
+        .maybeSingle();
+      userCaixa = pastCaixa;
+    }
+
     if (!userCaixa) {
-      toast({ 
-        title: "Caixa não aberto", 
-        description: "Você precisa abrir um caixa antes de criar comandas.",
-        variant: "destructive" 
+      toast({
+        title: "Caixa não aberto",
+        description: isToday
+          ? "Você precisa abrir um caixa antes de criar comandas."
+          : `Não existe caixa aberto para ${format(targetDate, "dd/MM/yyyy")}. Reabra o caixa desse dia.`,
+        variant: "destructive"
       });
-      navigate("/financeiro");
+      if (isToday) navigate("/financeiro");
       return;
     }
 
-    createComanda({ ...formData, caixa_id: userCaixa.id });
+    // Create comanda with the target date
+    const insertData: any = { ...formData, caixa_id: userCaixa.id };
+    if (!isToday) {
+      insertData.created_at = targetDate.toISOString();
+    }
+
+    createComanda(insertData);
     setModalOpen(false);
     setFormData({ client_id: null, professional_id: null });
+    setComandaDate("");
   };
 
   const formatCurrency = (value: number) => {
@@ -667,6 +702,20 @@ export default function Comandas() {
                 </SelectContent>
               </Select>
             </div>
+
+            {isMaster && (
+              <div className="space-y-2">
+                <Label>Data da Comanda <span className="text-xs text-muted-foreground">(somente master)</span></Label>
+                <Input
+                  type="date"
+                  value={comandaDate}
+                  onChange={(e) => setComandaDate(e.target.value)}
+                  max={format(new Date(), "yyyy-MM-dd")}
+                  placeholder="Hoje"
+                />
+                <p className="text-xs text-muted-foreground">Deixe vazio para usar a data de hoje. O caixa do dia selecionado precisa estar aberto.</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>
