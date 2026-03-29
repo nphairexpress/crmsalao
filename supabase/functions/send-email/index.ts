@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_confirmation" | "appointment_reminder" | "appointment_update";
+  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_confirmation" | "appointment_reminder" | "appointment_update" | "appointment_cancellation";
   salon_id: string;
   to_email: string;
   to_name: string;
@@ -249,6 +249,19 @@ function buildEmailContent(
         <p>Caso tenha dúvidas sobre a alteração, entre em contato conosco. 😊</p>
         <p style="margin-top:24px;">Com carinho,<br/><strong>${salonName}</strong> 💜</p>`;
       return { subject, html: generateHtml(logoUrl, salonName, "Agendamento Atualizado! 📋", body, subject) };
+    }
+
+    case "appointment_cancellation": {
+      const subject = `❌ Agendamento cancelado no ${salonName}`;
+      const body = `
+        <p>Olá <strong>${name}</strong>! 👋</p>
+        <p>Informamos que seu agendamento foi <strong>cancelado</strong>:</p>
+        ${highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#ef4444")}
+        ${highlightBox(`<strong>Data:</strong> ${vars.date} às <strong>${vars.time}</strong>`, "📅", "#6b7280")}
+        ${highlightBox(`<strong>Profissional:</strong> ${vars.professional_name || "Não informado"}`, "👤", "#6b7280")}
+        <p>Se desejar reagendar, entre em contato conosco. Estamos à disposição! 😊</p>
+        <p style="margin-top:24px;">Com carinho,<br/><strong>${salonName}</strong> 💜</p>`;
+      return { subject, html: generateHtml(logoUrl, salonName, "Agendamento Cancelado ❌", body, subject) };
     }
 
     case "campaign": {

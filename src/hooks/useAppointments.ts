@@ -202,16 +202,19 @@ export function useAppointments(date?: Date) {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: "Agendamento atualizado com sucesso!" });
 
-      // Send update notification email
+      // Send email based on status change
       try {
         if (data?.client_id && salonId) {
+          const isCancelled = data.status === "cancelled";
+          const emailType = isCancelled ? "appointment_cancellation" : "appointment_update";
+
           supabase.from("clients").select("name, email").eq("id", data.client_id).single().then(({ data: client }) => {
             if (client?.email) {
               supabase.from("services").select("name").eq("id", data.service_id).single().then(({ data: service }) => {
                 supabase.from("professionals").select("name").eq("id", data.professional_id).single().then(({ data: prof }) => {
                   const scheduledDate = new Date(data.scheduled_at);
                   sendEmail({
-                    type: "appointment_update" as any,
+                    type: emailType as any,
                     salon_id: salonId,
                     to_email: client.email,
                     to_name: client.name || "Cliente",
