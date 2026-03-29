@@ -151,33 +151,34 @@ export function useAppointments(date?: Date) {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: `${data.length} agendamento(s) criado(s) com sucesso!` });
 
-      // Send email for first appointment only (to avoid duplicates)
-      if (data.length > 0) {
-        const first = data[0] as any;
-        const client = first.clients;
-        const professional = first.professionals;
-        const service = first.services;
-        if (client?.email && salonId) {
-          const scheduledDate = new Date(first.scheduled_at);
-          sendEmail({
-            type: "appointment_confirmation",
-            salon_id: salonId,
-            to_email: client.email,
-            to_name: client.name || "Cliente",
-            client_id: first.client_id || undefined,
-            variables: {
-              service_name: data.length > 1
-                ? `${service?.name || "Serviço"} + ${data.length - 1} outro(s)`
-                : service?.name || "Não informado",
-              professional_name: professional?.name || "Não informado",
-              date: format(scheduledDate, "dd/MM/yyyy", { locale: ptBR }),
-              time: format(scheduledDate, "HH:mm", { locale: ptBR }),
-            },
-          }).catch((err) => {
-            console.error("Erro ao enviar e-mail de confirmação:", err);
-          });
+      // Send confirmation email with ALL services listed
+      try {
+        if (data.length > 0) {
+          const first = data[0] as any;
+          const client = first.clients;
+          if (client?.email && salonId) {
+            const scheduledDate = new Date(first.scheduled_at);
+            const servicesList = data.map((a: any) => {
+              const t = format(new Date(a.scheduled_at), "HH:mm");
+              return `${a.services?.name || "Serviço"} às ${t}`;
+            }).join("\n");
+
+            sendEmail({
+              type: "appointment_confirmation",
+              salon_id: salonId,
+              to_email: client.email,
+              to_name: client.name || "Cliente",
+              client_id: first.client_id || undefined,
+              variables: {
+                service_name: servicesList,
+                professional_name: data.length > 1 ? "Equipe do salão" : (first.professionals?.name || "Não informado"),
+                date: format(scheduledDate, "dd/MM/yyyy", { locale: ptBR }),
+                time: data.length > 1 ? data.map((a: any) => format(new Date(a.scheduled_at), "HH:mm")).join(", ") : format(scheduledDate, "HH:mm"),
+              },
+            }).catch(console.error);
+          }
         }
-      }
+      } catch (e) { console.error("Email error:", e); }
     },
     onError: (error: Error) => {
       toast({ title: "Erro ao criar agendamentos", description: error.message, variant: "destructive" });
@@ -199,7 +200,7 @@ export function useAppointments(date?: Date) {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       toast({ title: "Agendamento atualizado com sucesso!" });
 
-      // Send confirmation email on update too
+      // Send update notification email
       try {
         if (data?.client_id && salonId) {
           supabase.from("clients").select("name, email").eq("id", data.client_id).single().then(({ data: client }) => {
@@ -208,7 +209,7 @@ export function useAppointments(date?: Date) {
                 supabase.from("professionals").select("name").eq("id", data.professional_id).single().then(({ data: prof }) => {
                   const scheduledDate = new Date(data.scheduled_at);
                   sendEmail({
-                    type: "appointment_confirmation",
+                    type: "appointment_update" as any,
                     salon_id: salonId,
                     to_email: client.email,
                     to_name: client.name || "Cliente",

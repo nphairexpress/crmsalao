@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_confirmation" | "appointment_reminder";
+  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_confirmation" | "appointment_reminder" | "appointment_update";
   salon_id: string;
   to_email: string;
   to_name: string;
@@ -206,10 +206,14 @@ function buildEmailContent(
 
     case "appointment_confirmation": {
       const subject = `✅ Agendamento confirmado no ${salonName}!`;
+      const serviceLines = (vars.service_name || "").split("\n").filter(Boolean);
+      const serviceHtml = serviceLines.length > 1
+        ? serviceLines.map(s => highlightBox(`${s}`, "💇‍♀️", "#6366f1")).join("")
+        : highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#6366f1");
       const body = `
         <p>Olá <strong>${name}</strong>! 👋</p>
         <p>Seu agendamento foi confirmado com sucesso! Confira os detalhes:</p>
-        ${highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#6366f1")}
+        ${serviceHtml}
         ${highlightBox(`<strong>Data:</strong> ${vars.date} às <strong>${vars.time}</strong>`, "📅", "#10b981")}
         ${highlightBox(`<strong>Profissional:</strong> ${vars.professional_name || "Não informado"}`, "👤", "#3b82f6")}
         <p>Estamos te esperando! Caso precise remarcar, entre em contato conosco. 😊</p>
@@ -228,6 +232,23 @@ function buildEmailContent(
         <p>Te esperamos! Caso precise remarcar, entre em contato conosco com antecedência. 🙏</p>
         <p style="margin-top:24px;">Até amanhã!<br/><strong>${salonName}</strong> 💜</p>`;
       return { subject, html: generateHtml(logoUrl, salonName, "Lembrete de Agendamento! ⏰", body, subject) };
+    }
+
+    case "appointment_update": {
+      const subject = `📋 Seu agendamento no ${salonName} foi atualizado`;
+      const serviceLines = (vars.service_name || "").split("\n").filter(Boolean);
+      const serviceHtml = serviceLines.length > 1
+        ? serviceLines.map(s => highlightBox(`${s}`, "💇‍♀️", "#6366f1")).join("")
+        : highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#6366f1");
+      const body = `
+        <p>Olá <strong>${name}</strong>! 👋</p>
+        <p>Seu agendamento foi <strong>atualizado</strong>. Confira os novos detalhes:</p>
+        ${serviceHtml}
+        ${highlightBox(`<strong>Data:</strong> ${vars.date} às <strong>${vars.time}</strong>`, "📅", "#f59e0b")}
+        ${highlightBox(`<strong>Profissional:</strong> ${vars.professional_name || "Não informado"}`, "👤", "#3b82f6")}
+        <p>Caso tenha dúvidas sobre a alteração, entre em contato conosco. 😊</p>
+        <p style="margin-top:24px;">Com carinho,<br/><strong>${salonName}</strong> 💜</p>`;
+      return { subject, html: generateHtml(logoUrl, salonName, "Agendamento Atualizado! 📋", body, subject) };
     }
 
     case "campaign": {
