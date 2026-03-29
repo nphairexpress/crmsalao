@@ -282,6 +282,13 @@ export function useClientComandas(clientId: string | null) {
             total_price,
             service_id,
             product_id
+          ),
+          payments(
+            id,
+            payment_method,
+            amount,
+            fee_amount,
+            net_amount
           )
         `)
         .eq("salon_id", salonId)

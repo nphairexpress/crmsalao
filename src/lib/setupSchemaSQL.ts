@@ -1037,6 +1037,31 @@ CREATE INDEX idx_client_packages_client_id ON public.client_packages(client_id);
 CREATE INDEX idx_client_package_usage_client_package_id ON public.client_package_usage(client_package_id);
 
 -- ============================================================
+-- 13. SISTEMA FINANCEIRO DO CLIENTE (client_balance)
+-- ============================================================
+
+CREATE TABLE public.client_balance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  salon_id UUID REFERENCES public.salons(id) ON DELETE CASCADE NOT NULL,
+  client_id UUID REFERENCES public.clients(id) ON DELETE CASCADE NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('credit', 'debt')),
+  amount DECIMAL(10,2) NOT NULL,
+  description TEXT,
+  comanda_id UUID REFERENCES public.comandas(id),
+  created_by UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.client_balance ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view client balance in their salon" ON public.client_balance FOR SELECT TO authenticated USING (salon_id = get_user_salon_id(auth.uid()));
+CREATE POLICY "Users can insert client balance in their salon" ON public.client_balance FOR INSERT TO authenticated WITH CHECK (salon_id = get_user_salon_id(auth.uid()));
+CREATE POLICY "Users can update client balance in their salon" ON public.client_balance FOR UPDATE TO authenticated USING (salon_id = get_user_salon_id(auth.uid()));
+CREATE POLICY "Users can delete client balance in their salon" ON public.client_balance FOR DELETE TO authenticated USING (salon_id = get_user_salon_id(auth.uid()));
+
+CREATE INDEX idx_client_balance_salon_id ON public.client_balance(salon_id);
+CREATE INDEX idx_client_balance_client_id ON public.client_balance(client_id);
+
+-- ============================================================
 -- Schema criado com sucesso! Agora volte ao instalador.
 -- ============================================================
 `;

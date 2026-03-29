@@ -26,6 +26,7 @@ import { ptBR } from "date-fns/locale";
 import { Loader2, Search } from "lucide-react";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
 import { ClientPackagesTab } from "@/components/clients/ClientPackagesTab";
+import { ClientFinanceTab } from "@/components/clients/ClientFinanceTab";
 
 const HOW_MET_OPTIONS = [
   { value: "indicacao", label: "Indicação" },
@@ -206,10 +207,11 @@ export function ClientModal({ open, onOpenChange, client, onSubmit, isLoading, i
           <DialogTitle>{client ? "Editar Cliente" : "Cadastre um novo cliente"}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="cadastro" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
             <TabsTrigger value="comandas" disabled={!client}>Comandas</TabsTrigger>
             <TabsTrigger value="pacotes" disabled={!client}>Pacotes</TabsTrigger>
+            <TabsTrigger value="financeiro" disabled={!client}>Financeiro</TabsTrigger>
             <TabsTrigger value="anamnese">Anamnese</TabsTrigger>
           </TabsList>
           <form onSubmit={handleSubmit}>
@@ -548,6 +550,16 @@ export function ClientModal({ open, onOpenChange, client, onSubmit, isLoading, i
                 )}
               </TabsContent>
 
+              <TabsContent value="financeiro" className="space-y-4 mt-4">
+                {client ? (
+                  <ClientFinanceTab clientId={client.id} clientName={client.name} />
+                ) : (
+                  <div className="flex items-center justify-center h-40 text-muted-foreground">
+                    <p>Salve o cliente primeiro para acessar o financeiro.</p>
+                  </div>
+                )}
+              </TabsContent>
+
               <TabsContent value="anamnese" className="space-y-4 mt-4">
                 <div className="flex items-center justify-center h-40 text-muted-foreground">
                   <p>Funcionalidade de anamnese em breve.</p>
@@ -628,6 +640,7 @@ function ClientComandasTab({ clientId }: ClientComandasTabProps) {
             <TableHead>Data</TableHead>
             <TableHead>Profissional</TableHead>
             <TableHead>Serviços/Produtos</TableHead>
+            <TableHead>Pagamento</TableHead>
             <TableHead className="text-right">Total</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
@@ -654,6 +667,19 @@ function ClientComandasTab({ clientId }: ClientComandasTabProps) {
                     </Badge>
                   )}
                   {(!comanda.items || comanda.items.length === 0) && (
+                    <span className="text-muted-foreground text-sm">—</span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1">
+                  {comanda.payments?.length > 0 ? (
+                    comanda.payments.map((p: any) => (
+                      <Badge key={p.id} variant="outline" className="text-xs">
+                        {formatPaymentMethod(p.payment_method)} R$ {Number(p.amount).toFixed(2)}
+                      </Badge>
+                    ))
+                  ) : (
                     <span className="text-muted-foreground text-sm">—</span>
                   )}
                 </div>

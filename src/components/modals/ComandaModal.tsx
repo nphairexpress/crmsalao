@@ -32,6 +32,7 @@ import { useStockMovements } from "@/hooks/useStockMovements";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useCardBrands } from "@/hooks/useCardBrands";
 import { ComandaServiceProducts } from "@/components/comanda/ComandaServiceProducts";
+import { useClientNetBalance } from "@/hooks/useClientBalance";
 
 interface ComandaModalProps {
   comanda: Comanda | null;
@@ -94,7 +95,8 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const { deductStockForServices } = useStockMovements();
   const { bankAccounts } = useBankAccounts();
   const { cardBrands } = useCardBrands();
-  
+  const { netBalance: clientNetBalance, isLoading: isLoadingBalance } = useClientNetBalance(comanda?.client_id || null);
+
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isClosing, setIsClosing] = useState(false);
@@ -855,12 +857,33 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         }
       }
 
+      // If client had existing debt and payment covers it, create credit entry to zero out
+      if (comanda.client_id && clientNetBalance < 0) {
+        const debtAmount = Math.abs(clientNetBalance);
+        // If the total payments cover services + debt, record a credit to offset the debt
+        if (totalPayments >= subtotal + debtAmount - 0.01) {
+          try {
+            await supabase.from("client_balance").insert({
+              salon_id: salonId,
+              client_id: comanda.client_id,
+              type: "credit",
+              amount: Math.round(debtAmount * 100) / 100,
+              description: `Pagamento de divida anterior via comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
+              comanda_id: comanda.id,
+            });
+          } catch (balanceError) {
+            console.error("Erro ao registrar pagamento de divida:", balanceError);
+          }
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["comandas"] });
       queryClient.invalidateQueries({ queryKey: ["comanda_items", comanda.id] });
       queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
       queryClient.invalidateQueries({ queryKey: ["products", salonId] });
       queryClient.invalidateQueries({ queryKey: ["client-credits"] });
       queryClient.invalidateQueries({ queryKey: ["client_comandas"] });
+      queryClient.invalidateQueries({ queryKey: ["client_balance"] });
       toast({ title: "Comanda finalizada com sucesso!" });
       onClose();
     } catch (error: any) {
@@ -927,6 +950,22 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Client Debt Warning */}
+              {comanda.client_id && clientNetBalance < 0 && (
+                <Card className="border-destructive/50 bg-destructive/10">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-destructive text-sm">
+                          Este cliente possui divida de {formatCurrency(Math.abs(clientNetBalance))}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Items Table */}
               <Card>
@@ -1278,6 +1317,26 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                       <AlertTriangle className="h-4 w-4 text-destructive" />
                       Salvar {formatCurrency(difference)} como dívida do cliente
                     </label>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Debt breakdown when client has pending debt */}
+              {comanda?.client_id && clientNetBalance < 0 && (
+                <Card className="border-orange-200 bg-orange-50/50">
+                  <CardContent className="p-4 space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Servicos:</span>
+                      <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-destructive">
+                      <span>Divida anterior:</span>
+                      <span className="font-medium">{formatCurrency(Math.abs(clientNetBalance))}</span>
+                    </div>
+                    <div className="border-t pt-1 flex items-center justify-between font-semibold">
+                      <span>Total com divida:</span>
+                      <span>{formatCurrency(subtotal + Math.abs(clientNetBalance))}</span>
+                    </div>
                   </CardContent>
                 </Card>
               )}
