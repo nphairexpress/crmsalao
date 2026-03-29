@@ -353,17 +353,15 @@ export function AppointmentModal({
                 <p className="text-sm text-primary">Celular: {selectedClient.phone}</p>
               )}
             </div>
-            {isAppointmentToday && (
-              <Button
-                type="button"
-                variant="default"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={handleOpenComanda}
-              >
-                <DollarSign className="h-4 w-4 mr-2" />
-                Abrir Comanda
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="default"
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleOpenComanda}
+            >
+              <DollarSign className="h-4 w-4 mr-2" />
+              Abrir Comanda
+            </Button>
           </div>
         )}
 
