@@ -9,7 +9,9 @@ export interface CardBrand {
   name: string;
   credit_fee_percent: number;
   debit_fee_percent: number;
-  installment_fee_percent: number;
+  credit_2_6_fee_percent: number;
+  credit_7_12_fee_percent: number;
+  credit_13_18_fee_percent: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -19,7 +21,9 @@ export interface CardBrandInput {
   name: string;
   credit_fee_percent: number;
   debit_fee_percent: number;
-  installment_fee_percent: number;
+  credit_2_6_fee_percent: number;
+  credit_7_12_fee_percent: number;
+  credit_13_18_fee_percent: number;
   is_active?: boolean;
 }
 

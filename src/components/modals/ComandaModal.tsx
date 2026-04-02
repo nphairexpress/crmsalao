@@ -76,6 +76,7 @@ interface Payment {
   info?: string;
   bankAccountId?: string | null;
   cardBrandId?: string | null;
+  installments?: number;
 }
 
 const PAYMENT_METHODS = [
@@ -83,8 +84,17 @@ const PAYMENT_METHODS = [
   { value: "pix", label: "PIX", icon: Smartphone },
   { value: "debit_card", label: "Cartão de Débito", icon: CreditCard },
   { value: "credit_card", label: "Cartão de Crédito", icon: CreditCard },
-  { value: "installment", label: "Cartão Parcelado", icon: CreditCard },
   { value: "other", label: "Outro", icon: Receipt },
+];
+
+const INSTALLMENT_OPTIONS = [
+  { value: 1, label: "À vista" },
+  { value: 2, label: "2x" }, { value: 3, label: "3x" }, { value: 4, label: "4x" },
+  { value: 5, label: "5x" }, { value: 6, label: "6x" }, { value: 7, label: "7x" },
+  { value: 8, label: "8x" }, { value: 9, label: "9x" }, { value: 10, label: "10x" },
+  { value: 11, label: "11x" }, { value: 12, label: "12x" }, { value: 13, label: "13x" },
+  { value: 14, label: "14x" }, { value: 15, label: "15x" }, { value: 16, label: "16x" },
+  { value: 17, label: "17x" }, { value: 18, label: "18x" },
 ];
 
 export function ComandaModal({ comanda, open, onClose, professionals, services, isEditingClosed = false, userCaixaId, onDelete, openCaixas = [] }: ComandaModalProps) {
@@ -246,6 +256,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         info: p.notes || "",
         bankAccountId: p.bank_account_id || null,
         cardBrandId: p.card_brand_id || null,
+        installments: p.installments || 1,
       })));
     }
   };
@@ -716,25 +727,30 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         pix: 0,
         credit_card: 0,
         debit_card: 0,
-        installment: 0,
         other: 0,
       };
 
       // Save new payments and track totals
       for (const payment of payments) {
         if (payment.id.startsWith("temp_")) {
-          // Calculate fee for payments (card, PIX, installment)
+          // Calculate fee for payments (card, PIX)
           let feeAmount = 0;
           let netAmount = payment.amount;
 
-          if ((payment.method === 'credit_card' || payment.method === 'debit_card' || payment.method === 'installment') && payment.cardBrandId) {
+          if ((payment.method === 'credit_card' || payment.method === 'debit_card') && payment.cardBrandId) {
             const brand = cardBrands.find(b => b.id === payment.cardBrandId);
             if (brand) {
-              const feePercent = payment.method === 'credit_card'
-                ? brand.credit_fee_percent
-                : payment.method === 'installment'
-                  ? (brand.installment_fee_percent || 0)
-                  : brand.debit_fee_percent;
+              let feePercent = 0;
+              if (payment.method === 'debit_card') {
+                feePercent = brand.debit_fee_percent;
+              } else {
+                // Credit card: fee depends on number of installments
+                const inst = payment.installments || 1;
+                if (inst <= 1) feePercent = brand.credit_fee_percent;
+                else if (inst <= 6) feePercent = brand.credit_2_6_fee_percent || 0;
+                else if (inst <= 12) feePercent = brand.credit_7_12_fee_percent || 0;
+                else feePercent = brand.credit_13_18_fee_percent || 0;
+              }
               feeAmount = payment.amount * (feePercent / 100);
               netAmount = payment.amount - feeAmount;
             }
@@ -750,7 +766,8 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             amount: payment.amount,
             notes: payment.info,
             bank_account_id: payment.method === 'pix' ? payment.bankAccountId : null,
-            card_brand_id: (payment.method === 'credit_card' || payment.method === 'debit_card' || payment.method === 'installment') ? payment.cardBrandId : null,
+            card_brand_id: (payment.method === 'credit_card' || payment.method === 'debit_card') ? payment.cardBrandId : null,
+            installments: payment.method === 'credit_card' ? (payment.installments || 1) : 1,
             fee_amount: feeAmount,
             net_amount: netAmount,
           });
@@ -774,7 +791,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
           .update({
             total_cash: (currentCaixa.total_cash || 0) + paymentTotals.cash,
             total_pix: (currentCaixa.total_pix || 0) + paymentTotals.pix,
-            total_credit_card: (currentCaixa.total_credit_card || 0) + paymentTotals.credit_card + paymentTotals.installment,
+            total_credit_card: (currentCaixa.total_credit_card || 0) + paymentTotals.credit_card,
             total_debit_card: (currentCaixa.total_debit_card || 0) + paymentTotals.debit_card,
             total_other: (currentCaixa.total_other || 0) + paymentTotals.other,
           })
@@ -1392,8 +1409,11 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                           if (v !== 'pix') {
                             updatePayment(payment.id, 'bankAccountId', null);
                           }
-                          if (v !== 'credit_card' && v !== 'debit_card' && v !== 'installment') {
+                          if (v !== 'credit_card' && v !== 'debit_card') {
                             updatePayment(payment.id, 'cardBrandId', null);
+                          }
+                          if (v !== 'credit_card') {
+                            updatePayment(payment.id, 'installments', 1);
                           }
                         }}
                       >
@@ -1426,29 +1446,53 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                             ))}
                           </SelectContent>
                         </Select>
-                      ) : (payment.method === 'credit_card' || payment.method === 'debit_card' || payment.method === 'installment') ? (
-                        <Select
-                          value={payment.cardBrandId || ""}
-                          onValueChange={(v) => updatePayment(payment.id, 'cardBrandId', v || null)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a bandeira" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {cardBrands.filter(b => b.is_active).map((brand) => {
-                              const feePercent = payment.method === 'credit_card'
-                                ? brand.credit_fee_percent
-                                : payment.method === 'installment'
-                                  ? (brand.installment_fee_percent || 0)
-                                  : brand.debit_fee_percent;
-                              return (
-                                <SelectItem key={brand.id} value={brand.id}>
-                                  {brand.name} ({feePercent}%)
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
+                      ) : (payment.method === 'credit_card' || payment.method === 'debit_card') ? (
+                        <>
+                          <Select
+                            value={payment.cardBrandId || ""}
+                            onValueChange={(v) => updatePayment(payment.id, 'cardBrandId', v || null)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Bandeira" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cardBrands.filter(b => b.is_active).map((brand) => {
+                                let feePercent = 0;
+                                if (payment.method === 'debit_card') {
+                                  feePercent = brand.debit_fee_percent;
+                                } else {
+                                  const inst = payment.installments || 1;
+                                  if (inst <= 1) feePercent = brand.credit_fee_percent;
+                                  else if (inst <= 6) feePercent = brand.credit_2_6_fee_percent || 0;
+                                  else if (inst <= 12) feePercent = brand.credit_7_12_fee_percent || 0;
+                                  else feePercent = brand.credit_13_18_fee_percent || 0;
+                                }
+                                return (
+                                  <SelectItem key={brand.id} value={brand.id}>
+                                    {brand.name} ({feePercent}%)
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          {payment.method === 'credit_card' && (
+                            <Select
+                              value={String(payment.installments || 1)}
+                              onValueChange={(v) => updatePayment(payment.id, 'installments', parseInt(v))}
+                            >
+                              <SelectTrigger className="w-[90px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {INSTALLMENT_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={String(opt.value)}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </>
                       ) : (
                         <div />
                       )}

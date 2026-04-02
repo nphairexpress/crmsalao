@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { CardBrand, CardBrandInput } from "@/hooks/useCardBrands";
 
 interface CardBrandModalProps {
@@ -16,23 +17,29 @@ interface CardBrandModalProps {
 
 export function CardBrandModal({ open, onClose, onSave, cardBrand, isLoading }: CardBrandModalProps) {
   const [name, setName] = useState("");
-  const [creditFeePercent, setCreditFeePercent] = useState("");
   const [debitFeePercent, setDebitFeePercent] = useState("");
-  const [installmentFeePercent, setInstallmentFeePercent] = useState("");
+  const [creditFeePercent, setCreditFeePercent] = useState("");
+  const [credit26FeePercent, setCredit26FeePercent] = useState("");
+  const [credit712FeePercent, setCredit712FeePercent] = useState("");
+  const [credit1318FeePercent, setCredit1318FeePercent] = useState("");
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     if (cardBrand) {
       setName(cardBrand.name);
-      setCreditFeePercent(String(cardBrand.credit_fee_percent));
       setDebitFeePercent(String(cardBrand.debit_fee_percent));
-      setInstallmentFeePercent(String(cardBrand.installment_fee_percent));
+      setCreditFeePercent(String(cardBrand.credit_fee_percent));
+      setCredit26FeePercent(String(cardBrand.credit_2_6_fee_percent || 0));
+      setCredit712FeePercent(String(cardBrand.credit_7_12_fee_percent || 0));
+      setCredit1318FeePercent(String(cardBrand.credit_13_18_fee_percent || 0));
       setIsActive(cardBrand.is_active);
     } else {
       setName("");
-      setCreditFeePercent("");
       setDebitFeePercent("");
-      setInstallmentFeePercent("");
+      setCreditFeePercent("");
+      setCredit26FeePercent("");
+      setCredit712FeePercent("");
+      setCredit1318FeePercent("");
       setIsActive(true);
     }
   }, [cardBrand, open]);
@@ -41,16 +48,18 @@ export function CardBrandModal({ open, onClose, onSave, cardBrand, isLoading }: 
     e.preventDefault();
     onSave({
       name,
-      credit_fee_percent: parseFloat(creditFeePercent) || 0,
       debit_fee_percent: parseFloat(debitFeePercent) || 0,
-      installment_fee_percent: parseFloat(installmentFeePercent) || 0,
+      credit_fee_percent: parseFloat(creditFeePercent) || 0,
+      credit_2_6_fee_percent: parseFloat(credit26FeePercent) || 0,
+      credit_7_12_fee_percent: parseFloat(credit712FeePercent) || 0,
+      credit_13_18_fee_percent: parseFloat(credit1318FeePercent) || 0,
       is_active: isActive,
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {cardBrand ? "Editar Bandeira" : "Nova Bandeira de Cartão"}
@@ -68,9 +77,9 @@ export function CardBrandModal({ open, onClose, onSave, cardBrand, isLoading }: 
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="debitFee">Taxa Débito (%)</Label>
+              <Label htmlFor="debitFee">Débito (%)</Label>
               <Input
                 id="debitFee"
                 type="number"
@@ -83,7 +92,7 @@ export function CardBrandModal({ open, onClose, onSave, cardBrand, isLoading }: 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="creditFee">Taxa Crédito (%)</Label>
+              <Label htmlFor="creditFee">Crédito à vista (%)</Label>
               <Input
                 id="creditFee"
                 type="number"
@@ -95,16 +104,48 @@ export function CardBrandModal({ open, onClose, onSave, cardBrand, isLoading }: 
                 placeholder="0.00"
               />
             </div>
+          </div>
+
+          <Separator />
+          <Label className="text-sm font-semibold text-muted-foreground">Crédito Parcelado</Label>
+
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="installmentFee">Taxa Parcelamento (%)</Label>
+              <Label htmlFor="credit26Fee" className="text-xs">2x a 6x (%)</Label>
               <Input
-                id="installmentFee"
+                id="credit26Fee"
                 type="number"
                 step="0.01"
                 min="0"
                 max="100"
-                value={installmentFeePercent}
-                onChange={(e) => setInstallmentFeePercent(e.target.value)}
+                value={credit26FeePercent}
+                onChange={(e) => setCredit26FeePercent(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="credit712Fee" className="text-xs">7x a 12x (%)</Label>
+              <Input
+                id="credit712Fee"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={credit712FeePercent}
+                onChange={(e) => setCredit712FeePercent(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="credit1318Fee" className="text-xs">13x a 18x (%)</Label>
+              <Input
+                id="credit1318Fee"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={credit1318FeePercent}
+                onChange={(e) => setCredit1318FeePercent(e.target.value)}
                 placeholder="0.00"
               />
             </div>

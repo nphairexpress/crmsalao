@@ -805,9 +805,11 @@ export default function Configuracoes() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Bandeira</TableHead>
-                          <TableHead className="text-center">Taxa Débito</TableHead>
-                          <TableHead className="text-center">Taxa Crédito</TableHead>
-                          <TableHead className="text-center">Taxa Parcelamento</TableHead>
+                          <TableHead className="text-center">Débito</TableHead>
+                          <TableHead className="text-center">Crédito</TableHead>
+                          <TableHead className="text-center">2-6x</TableHead>
+                          <TableHead className="text-center">7-12x</TableHead>
+                          <TableHead className="text-center">13-18x</TableHead>
                           <TableHead className="text-center">Status</TableHead>
                           <TableHead className="w-[100px]">Ações</TableHead>
                         </TableRow>
@@ -818,7 +820,9 @@ export default function Configuracoes() {
                             <TableCell className="font-medium">{brand.name}</TableCell>
                             <TableCell className="text-center"><Badge variant="outline">{brand.debit_fee_percent.toFixed(2)}%</Badge></TableCell>
                             <TableCell className="text-center"><Badge variant="outline">{brand.credit_fee_percent.toFixed(2)}%</Badge></TableCell>
-                            <TableCell className="text-center"><Badge variant="outline">{(brand.installment_fee_percent || 0).toFixed(2)}%</Badge></TableCell>
+                            <TableCell className="text-center"><Badge variant="outline">{(brand.credit_2_6_fee_percent || 0).toFixed(2)}%</Badge></TableCell>
+                            <TableCell className="text-center"><Badge variant="outline">{(brand.credit_7_12_fee_percent || 0).toFixed(2)}%</Badge></TableCell>
+                            <TableCell className="text-center"><Badge variant="outline">{(brand.credit_13_18_fee_percent || 0).toFixed(2)}%</Badge></TableCell>
                             <TableCell className="text-center"><Badge variant={brand.is_active ? "default" : "secondary"}>{brand.is_active ? "Ativa" : "Inativa"}</Badge></TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">

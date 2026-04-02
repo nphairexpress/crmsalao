@@ -20,7 +20,6 @@ const METHOD_LABELS: Record<string, string> = {
   pix: "PIX",
   debit_card: "Cartão de Débito",
   credit_card: "Cartão de Crédito",
-  installment: "Cartão Parcelado",
   other: "Outro",
   bank_transfer: "Transferência",
   check: "Cheque",
