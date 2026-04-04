@@ -124,6 +124,10 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const [packagePopoverOpen, setPackagePopoverOpen] = useState(false);
   const [availablePackages, setAvailablePackages] = useState<any[]>([]);
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
+  const [productPopoverOpen, setProductPopoverOpen] = useState(false);
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
 
   // Load packages when popover opens
   const loadPackages = async () => {
@@ -174,6 +178,65 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
       queryClient.invalidateQueries({ queryKey: ["client_packages"] });
     } catch (e: any) {
       toast({ title: "Erro ao adicionar pacote", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // Load products for sale when popover opens
+  const loadProducts = async () => {
+    if (!salonId) return;
+    setIsLoadingProducts(true);
+    const { data } = await supabase
+      .from("products")
+      .select("*")
+      .eq("salon_id", salonId)
+      .eq("is_active", true)
+      .gt("current_stock", 0)
+      .order("name");
+    setAvailableProducts(data || []);
+    setIsLoadingProducts(false);
+  };
+
+  const handleAddProduct = async (product: any) => {
+    if (!comanda?.id || !salonId) return;
+    setProductPopoverOpen(false);
+    setProductSearch("");
+
+    try {
+      // 1. Add product as item in comanda
+      await addItem({
+        comanda_id: comanda.id,
+        service_id: null,
+        product_id: product.id,
+        professional_id: null,
+        description: product.name,
+        item_type: "product",
+        quantity: 1,
+        unit_price: Number(product.sale_price),
+        total_price: Number(product.sale_price),
+        product_cost: Number(product.cost_price) || 0,
+      });
+
+      // 2. Deduct from stock
+      await supabase
+        .from("products")
+        .update({ current_stock: product.current_stock - 1 })
+        .eq("id", product.id);
+
+      // 3. Register stock movement
+      await supabase.from("stock_movements").insert({
+        salon_id: salonId,
+        product_id: product.id,
+        movement_type: "saida",
+        quantity: 1,
+        previous_stock: product.current_stock,
+        new_stock: product.current_stock - 1,
+        notes: `Venda comanda #${comanda.id.slice(0, 8)}`,
+      });
+
+      toast({ title: `Produto "${product.name}" adicionado!` });
+      queryClient.invalidateQueries({ queryKey: ["products", salonId] });
+    } catch (e: any) {
+      toast({ title: "Erro ao adicionar produto", description: e.message, variant: "destructive" });
     }
   };
 
@@ -1198,10 +1261,58 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                       showPrice
                     />
                     <div className="flex items-center gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Receipt className="h-4 w-4" />
-                        Produto
-                      </Button>
+                      <Popover open={productPopoverOpen} onOpenChange={(open) => { setProductPopoverOpen(open); if (open) { loadProducts(); setProductSearch(""); } }}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <Receipt className="h-4 w-4" />
+                            Produto
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-0" align="start">
+                          <Command shouldFilter={false}>
+                            <div className="p-2">
+                              <input
+                                className="w-full px-3 py-2 text-sm border rounded-md outline-none focus:ring-2 focus:ring-primary"
+                                placeholder="Buscar produto..."
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value)}
+                              />
+                            </div>
+                            <CommandList>
+                              {isLoadingProducts ? (
+                                <div className="flex items-center justify-center py-6">
+                                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                </div>
+                              ) : availableProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 ? (
+                                <CommandEmpty>Nenhum produto com estoque</CommandEmpty>
+                              ) : (
+                                <CommandGroup heading="Produtos disponíveis">
+                                  <ScrollArea className="max-h-60">
+                                    {availableProducts
+                                      .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                                      .map((product: any) => (
+                                        <CommandItem
+                                          key={product.id}
+                                          onSelect={() => handleAddProduct(product)}
+                                          className="flex flex-col items-start gap-1 cursor-pointer py-3"
+                                        >
+                                          <div className="flex items-center justify-between w-full">
+                                            <span className="font-medium">{product.name}</span>
+                                            <span className="font-bold text-primary">R$ {Number(product.sale_price).toFixed(2)}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span>Estoque: {product.current_stock}</span>
+                                            {product.brand && <span>• {product.brand}</span>}
+                                          </div>
+                                        </CommandItem>
+                                      ))}
+                                  </ScrollArea>
+                                </CommandGroup>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <Popover open={packagePopoverOpen} onOpenChange={(open) => { setPackagePopoverOpen(open); if (open) loadPackages(); }}>
                         <PopoverTrigger asChild>
                           <Button variant="outline" size="sm" className="gap-2">
