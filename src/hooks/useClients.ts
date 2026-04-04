@@ -133,9 +133,14 @@ export function useClients() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...input }: ClientInput & { id: string }) => {
+      // Converter strings vazias em null para campos de data (PostgreSQL não aceita "")
+      const cleaned: Record<string, any> = {};
+      for (const [key, value] of Object.entries(input)) {
+        cleaned[key] = (value === "" || value === undefined) ? null : value;
+      }
       const { data, error } = await supabase
         .from("clients")
-        .update(input)
+        .update(cleaned)
         .eq("id", id)
         .select()
         .single();

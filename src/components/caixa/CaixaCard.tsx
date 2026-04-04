@@ -12,6 +12,7 @@ import { supabase } from "@/lib/dynamicSupabaseClient";
 interface CaixaCardProps {
   caixa: Caixa;
   userName?: string;
+  label?: string;
   onClose?: () => void;
   onView?: () => void;
   onEdit?: () => void;
@@ -21,14 +22,15 @@ interface CaixaCardProps {
   showReopenButton?: boolean;
 }
 
-export function CaixaCard({ 
-  caixa, 
-  userName, 
-  onClose, 
-  onView, 
-  onEdit, 
+export function CaixaCard({
+  caixa,
+  userName,
+  label,
+  onClose,
+  onView,
+  onEdit,
   onReopen,
-  showCloseButton = false, 
+  showCloseButton = false,
   showEditButton = false,
   showReopenButton = false,
 }: CaixaCardProps) {
@@ -93,6 +95,7 @@ export function CaixaCard({
               </AvatarFallback>
             </Avatar>
             <div>
+              {label && <p className="text-xs font-semibold text-primary">{label}</p>}
               <h4 className="font-medium">{displayName}</h4>
               <p className="text-xs text-muted-foreground">
                 Aberto: {format(new Date(caixa.opened_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}

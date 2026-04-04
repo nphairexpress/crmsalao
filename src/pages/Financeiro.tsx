@@ -124,21 +124,6 @@ export default function Financeiro() {
               </Button>
             </div>
 
-            {userOpenCaixa && (
-              <Card className="border-primary">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-primary">Seu Caixa Aberto</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CaixaCard 
-                    caixa={userOpenCaixa} 
-                    showCloseButton 
-                    onClose={() => handleOpenCloseModal(userOpenCaixa)}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
             {openCaixas.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
@@ -147,11 +132,22 @@ export default function Financeiro() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {userOpenCaixa && (
+                  <div className="ring-2 ring-primary rounded-lg">
+                    <CaixaCard
+                      key={userOpenCaixa.id}
+                      caixa={userOpenCaixa}
+                      showCloseButton
+                      onClose={() => handleOpenCloseModal(userOpenCaixa)}
+                      label="Seu Caixa"
+                    />
+                  </div>
+                )}
                 {openCaixas
                   .filter(c => c.id !== userOpenCaixa?.id)
                   .map((caixa) => (
-                    <CaixaCard 
-                      key={caixa.id} 
+                    <CaixaCard
+                      key={caixa.id}
                       caixa={caixa}
                       showCloseButton={true}
                       showEditButton={true}

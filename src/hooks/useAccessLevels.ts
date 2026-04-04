@@ -49,7 +49,7 @@ export const PERMISSION_FEATURES: PermissionFeature[] = [
   { key: "caixas", label: "Caixas", actions: ["view", "edit", "delete"] },
   { key: "clientes_dados", label: "Clientes Dados", actions: ["view", "edit", "delete"] },
   { key: "clientes_historico", label: "Clientes Histórico", actions: ["view"] },
-  { key: "comandas", label: "Comandas", actions: ["view", "edit", "delete"] },
+  { key: "comandas", label: "Comandas", actions: ["view", "edit", "delete", "view_others"] },
   { key: "comandas_comissao", label: "Comandas (Comissão dos itens)", actions: ["edit"] },
   { key: "comandas_estorno", label: "Comandas (Estornar pagamentos)", actions: ["edit"] },
   { key: "comandas_itens", label: "Comandas (Itens das comandas)", actions: ["edit", "delete", "view_others"] },

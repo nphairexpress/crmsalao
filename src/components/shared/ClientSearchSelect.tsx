@@ -86,7 +86,7 @@ export function ClientSearchSelect({
               if (!open) setOpen(true);
             }}
             onFocus={() => {
-              if (!open) setOpen(true);
+              // Não abre automaticamente no focus — só ao clicar ou digitar
             }}
             onKeyDown={(e) => {
               // Prevent popover from closing on typing

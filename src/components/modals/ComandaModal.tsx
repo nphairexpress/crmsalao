@@ -32,6 +32,7 @@ import { useStockMovements } from "@/hooks/useStockMovements";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useCardBrands } from "@/hooks/useCardBrands";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
 import { ComandaServiceProducts } from "@/components/comanda/ComandaServiceProducts";
 import { useClientNetBalance } from "@/hooks/useClientBalance";
 
@@ -100,6 +101,7 @@ const INSTALLMENT_OPTIONS = [
 export function ComandaModal({ comanda, open, onClose, professionals, services, isEditingClosed = false, userCaixaId, onDelete, openCaixas = [] }: ComandaModalProps) {
   const { toast } = useToast();
   const { salonId } = useAuth();
+  const { hasPermission, professionalId: currentProfessionalId, isMaster } = useCurrentUserPermissions();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("itens");
   const { items, isLoading, addItem, removeItem, isAdding, isRemoving } = useComandaItems(comanda?.id || null);
@@ -184,6 +186,11 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const comandaCaixa = comanda?.caixa_id ? openCaixas.find(c => c.id === comanda.caixa_id) : null;
   const isCaixaClosed = comanda?.caixa_id ? !comandaCaixa : false;
   const isComandaLocked = comanda?.closed_at && isCaixaClosed;
+
+  // Check if user can close this comanda (own comanda or has permission to close others)
+  const isOwnComanda = !comanda?.professional_id || comanda.professional_id === currentProfessionalId;
+  const canCloseOthers = hasPermission("comandas.view_others");
+  const canFinalizeComanda = isMaster || isOwnComanda || canCloseOthers;
 
   // Get available caixas for the comanda date
   const availableCaixas = openCaixas.filter(c => {
@@ -1579,12 +1586,13 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
               <Trash2 className="h-4 w-4" />
             </Button>
             <Button variant="outline" onClick={onClose}>Confirmar</Button>
-            <Button 
+            <Button
               className="bg-destructive hover:bg-destructive/90"
               onClick={handleFinalizeComanda}
-              disabled={isClosing}
+              disabled={isClosing || !canFinalizeComanda}
+              title={!canFinalizeComanda ? "Você só pode finalizar suas próprias comandas" : undefined}
             >
-              {isClosing ? "Finalizando..." : "Finalizar Comanda"}
+              {isClosing ? "Finalizando..." : !canFinalizeComanda ? "Sem permissão" : "Finalizar Comanda"}
             </Button>
           </div>
         </div>
