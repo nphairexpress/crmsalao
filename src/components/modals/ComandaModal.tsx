@@ -767,6 +767,112 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const totalPayments = payments.reduce((acc, p) => acc + p.amount, 0);
   const difference = subtotal - totalPayments;
 
+  const handlePrintReceipt = () => {
+    if (!comanda) return;
+    const comandaNumber = comanda.id.slice(0, 4).toUpperCase();
+    const dateStr = comanda.created_at
+      ? format(new Date(comanda.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+      : "";
+    const clientName = comanda.client?.name || "Cliente não informado";
+    const professionalName = comanda.professional?.name || "Profissional não informado";
+
+    const methodLabel = (m: string) => {
+      const found = PAYMENT_METHODS.find(pm => pm.value === m);
+      return found ? found.label : m;
+    };
+
+    const fmtCurr = (v: number) =>
+      new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+    const itemsHtml = editableItems
+      .map(
+        (item) =>
+          `<tr>
+            <td style="text-align:left;padding:2px 0;">${item.description}</td>
+            <td style="text-align:center;padding:2px 4px;">${item.quantity}</td>
+            <td style="text-align:right;padding:2px 0;">${fmtCurr(item.unit_price)}</td>
+            <td style="text-align:right;padding:2px 0;">${fmtCurr(item.total_price)}</td>
+          </tr>`
+      )
+      .join("");
+
+    const paymentsHtml = payments
+      .map(
+        (p) =>
+          `<tr>
+            <td style="text-align:left;padding:2px 0;">${methodLabel(p.method)}</td>
+            <td style="text-align:right;padding:2px 0;">${fmtCurr(p.amount)}</td>
+          </tr>`
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Recibo #${comandaNumber}</title>
+<style>
+  @page { size: 80mm auto; margin: 2mm; }
+  body { font-family: 'Courier New', monospace; font-size: 12px; width: 280px; margin: 0 auto; padding: 8px; }
+  h2 { text-align: center; margin: 0 0 4px; font-size: 14px; }
+  .divider { border-top: 1px dashed #000; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  .info { font-size: 11px; }
+  .total-row td { font-weight: bold; padding-top: 4px; }
+  .footer { text-align: center; margin-top: 10px; font-size: 11px; }
+</style></head><body>
+  <h2>Recibo</h2>
+  <div class="divider"></div>
+  <div class="info">
+    <div><strong>Comanda:</strong> #${comandaNumber}</div>
+    <div><strong>Data:</strong> ${dateStr}</div>
+    <div><strong>Cliente:</strong> ${clientName}</div>
+    <div><strong>Profissional:</strong> ${professionalName}</div>
+  </div>
+  <div class="divider"></div>
+  <table>
+    <thead><tr>
+      <th style="text-align:left;">Item</th>
+      <th style="text-align:center;">Qtd</th>
+      <th style="text-align:right;">Unit.</th>
+      <th style="text-align:right;">Total</th>
+    </tr></thead>
+    <tbody>${itemsHtml}</tbody>
+  </table>
+  <div class="divider"></div>
+  <table>
+    <tr class="total-row">
+      <td style="text-align:left;">Subtotal</td>
+      <td style="text-align:right;">${fmtCurr(subtotal)}</td>
+    </tr>
+  </table>
+  ${payments.length > 0 ? `
+  <div class="divider"></div>
+  <table>
+    <thead><tr>
+      <th style="text-align:left;">Pagamento</th>
+      <th style="text-align:right;">Valor</th>
+    </tr></thead>
+    <tbody>${paymentsHtml}</tbody>
+  </table>
+  <div class="divider"></div>
+  <table>
+    <tr class="total-row">
+      <td style="text-align:left;">Total Pago</td>
+      <td style="text-align:right;">${fmtCurr(totalPayments)}</td>
+    </tr>
+  </table>` : ""}
+  <div class="divider"></div>
+  <div class="footer">Obrigado pela preferência!</div>
+</body></html>`;
+
+    const printWindow = window.open("", "_blank", "width=350,height=600");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    }
+  };
+
   const handleFinalizeComanda = async () => {
     if (!comanda || !salonId) return;
 
@@ -1770,7 +1876,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
               <div className="text-sm text-muted-foreground">Total a Pagar</div>
               <div className="text-lg font-semibold">{formatCurrency(subtotal)}</div>
             </div>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" onClick={handlePrintReceipt}>
               <Printer className="h-4 w-4" />
             </Button>
             <Button 

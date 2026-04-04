@@ -64,12 +64,7 @@ export default function Financeiro() {
 
   const handleCloseCaixa = (closingBalance: number, notes?: string) => {
     if (!selectedCaixa) return;
-    closeCaixa({ caixaId: selectedCaixa.id, closingBalance, notes }, {
-      onSuccess: () => {
-        setCloseCaixaModalOpen(false);
-        setSelectedCaixa(null);
-      }
-    });
+    closeCaixa({ caixaId: selectedCaixa.id, closingBalance, notes });
   };
 
   const handleOpenCloseModal = (caixa: Caixa) => {
