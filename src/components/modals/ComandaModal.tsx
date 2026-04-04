@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -275,27 +275,51 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   // Get selected caixa info
   const selectedCaixa = openCaixas.find(c => c.id === selectedCaixaId);
 
-  // Sync items to editable state
+  // Sync items to editable state (preserve expansion state)
   useEffect(() => {
     if (items) {
-      setEditableItems(items.map(item => ({
-        ...item,
-        isEditing: false,
-        editQuantity: item.quantity,
-        editUnitPrice: item.unit_price,
-        editDiscount: 0,
-        editProfessionalId: (item as any).professional_id || comanda?.professional_id || null,
-        isProductsExpanded: false,
-      })));
+      setEditableItems(prev => {
+        const expandedMap = new Map(prev.map(i => [i.id, i.isProductsExpanded]));
+        const costMap = new Map(prev.map(i => [i.id, i.product_cost]));
+        return items.map(item => ({
+          ...item,
+          product_cost: costMap.get(item.id) ?? item.product_cost,
+          isEditing: false,
+          editQuantity: item.quantity,
+          editUnitPrice: item.unit_price,
+          editDiscount: 0,
+          editProfessionalId: (item as any).professional_id || comanda?.professional_id || null,
+          isProductsExpanded: expandedMap.get(item.id) || false,
+        }));
+      });
     }
   }, [items, comanda?.professional_id]);
 
-  // Handler for product usage changes in service items
-  const handleProductUsageChange = useCallback((serviceId: string, products: ProductUsage[]) => {
+  // Ref to access latest items without recreating callback
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  // Handler for product usage changes in service items — persists product_cost to DB
+  const handleProductUsageChange = useCallback(async (serviceId: string, products: ProductUsage[]) => {
     setServiceProductUsages(prev => ({
       ...prev,
       [serviceId]: products,
     }));
+
+    const totalCost = products.reduce((sum, p) => sum + p.total_cost, 0);
+    const item = itemsRef.current.find(i => i.service_id === serviceId);
+    if (!item) return;
+
+    // Update product_cost in the database
+    await supabase
+      .from("comanda_items")
+      .update({ product_cost: totalCost })
+      .eq("id", item.id);
+
+    // Update local state without triggering full sync
+    setEditableItems(prev => prev.map(i =>
+      i.id === item.id ? { ...i, product_cost: totalCost } : i
+    ));
   }, []);
 
   // Toggle product section expansion for an item

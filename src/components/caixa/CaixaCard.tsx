@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { X, Eye, Pencil, RotateCcw, Gift, AlertTriangle } from "lucide-react";
+import { X, Eye, Pencil, RotateCcw, Gift, AlertTriangle, ChevronDown, ChevronUp, FileText, Loader2 } from "lucide-react";
 import { Caixa } from "@/hooks/useCaixas";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/dynamicSupabaseClient";
@@ -34,9 +35,26 @@ export function CaixaCard({
   showEditButton = false,
   showReopenButton = false,
 }: CaixaCardProps) {
+  const [showComandas, setShowComandas] = useState(false);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
   };
+
+  // Fetch linked comandas (lazy — only when expanded)
+  const { data: linkedComandas, isLoading: loadingComandas } = useQuery({
+    queryKey: ["caixa-comandas", caixa.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("comandas")
+        .select("id, total, closed_at, created_at, client:clients(name), professional:professionals(name), payments(payment_method, amount)")
+        .eq("caixa_id", caixa.id)
+        .order("closed_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: showComandas,
+  });
 
   // Fetch credits and debts linked to comandas of this caixa
   const { data: caixaExtras } = useQuery({
@@ -166,6 +184,74 @@ export function CaixaCard({
               )}
             </div>
           )}
+
+          {/* Comandas linked to this caixa */}
+          <div className="border-t pt-3">
+            <button
+              type="button"
+              onClick={() => setShowComandas(prev => !prev)}
+              className="flex items-center gap-2 w-full text-left text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <FileText className="h-4 w-4" />
+              <span>Comandas neste caixa</span>
+              <span className="ml-auto">
+                {showComandas ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </span>
+            </button>
+
+            {showComandas && (
+              <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
+                {loadingComandas ? (
+                  <div className="flex items-center justify-center py-3">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !linkedComandas || linkedComandas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic py-2">Nenhuma comanda vinculada.</p>
+                ) : (
+                  linkedComandas.map((cmd: any) => {
+                    const paymentMethods = (cmd.payments || []).reduce((acc: Record<string, number>, p: any) => {
+                      const label: Record<string, string> = {
+                        cash: "Dinheiro", pix: "PIX", credit_card: "Crédito", debit_card: "Débito", other: "Outro",
+                      };
+                      const name = label[p.payment_method] || p.payment_method;
+                      acc[name] = (acc[name] || 0) + Number(p.amount);
+                      return acc;
+                    }, {});
+
+                    return (
+                      <div key={cmd.id} className="bg-muted/50 rounded-md p-2.5 text-xs space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">
+                            #{cmd.id.slice(0, 4).toUpperCase()} — {(cmd.client as any)?.name || "Cliente avulso"}
+                          </span>
+                          <span className="font-semibold text-primary">{formatCurrency(cmd.total || 0)}</span>
+                        </div>
+                        {(cmd.professional as any)?.name && (
+                          <div className="text-muted-foreground">
+                            Profissional: {(cmd.professional as any).name}
+                          </div>
+                        )}
+                        {Object.keys(paymentMethods).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {Object.entries(paymentMethods).map(([method, amount]) => (
+                              <Badge key={method} variant="outline" className="text-[10px] px-1.5 py-0">
+                                {method}: {formatCurrency(amount as number)}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {cmd.closed_at && (
+                          <div className="text-muted-foreground">
+                            Fechada: {format(new Date(cmd.closed_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
 
           {caixa.closed_at && (
             <div className="border-t pt-3 text-sm text-muted-foreground">
