@@ -121,6 +121,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const [serviceProductUsages, setServiceProductUsages] = useState<Record<string, ProductUsage[]>>({});
   const [saveOverpaymentAsCredit, setSaveOverpaymentAsCredit] = useState(false);
   const [saveUnderpaymentAsDebt, setSaveUnderpaymentAsDebt] = useState(false);
+  const [enableCashback, setEnableCashback] = useState(true);
   const [packagePopoverOpen, setPackagePopoverOpen] = useState(false);
   const [availablePackages, setAvailablePackages] = useState<any[]>([]);
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
@@ -929,20 +930,26 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         }
       }
 
-      // Generate loyalty credit (7% discount for next visit)
-      if (comanda.client_id && subtotal > 0) {
+      // Generate loyalty credit (7% of SERVICES only, not products)
+      if (enableCashback && comanda.client_id) {
         try {
-          const creditAmount = Math.round(subtotal * 0.07 * 100) / 100;
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 15);
-          await supabase.from("client_credits").insert({
-            salon_id: salonId,
-            client_id: comanda.client_id,
-            comanda_id: comanda.id,
-            credit_amount: creditAmount,
-            min_purchase_amount: 100,
-            expires_at: expiresAt.toISOString(),
-          });
+          const servicesTotal = editableItems
+            .filter(item => item.item_type === "service")
+            .reduce((sum, item) => sum + (item.total_price || 0), 0);
+
+          if (servicesTotal > 0) {
+            const creditAmount = Math.round(servicesTotal * 0.07 * 100) / 100;
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 15);
+            await supabase.from("client_credits").insert({
+              salon_id: salonId,
+              client_id: comanda.client_id,
+              comanda_id: comanda.id,
+              credit_amount: creditAmount,
+              min_purchase_amount: 100,
+              expires_at: expiresAt.toISOString(),
+            });
+          }
         } catch (creditError) {
           console.error("Erro ao gerar crédito de fidelidade:", creditError);
         }
@@ -1489,6 +1496,23 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                     <label htmlFor="save-debt" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
                       <AlertTriangle className="h-4 w-4 text-destructive" />
                       Salvar {formatCurrency(difference)} como dívida do cliente
+                    </label>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Cashback toggle */}
+              {comanda?.client_id && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Checkbox
+                      id="enable-cashback"
+                      checked={enableCashback}
+                      onCheckedChange={(checked) => setEnableCashback(!!checked)}
+                    />
+                    <label htmlFor="enable-cashback" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                      <Gift className="h-4 w-4 text-primary" />
+                      Gerar cashback de 7% sobre serviços para esta cliente
                     </label>
                   </CardContent>
                 </Card>
