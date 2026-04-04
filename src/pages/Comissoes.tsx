@@ -45,12 +45,12 @@ export default function Comissoes() {
   const [selectedProfessional, setSelectedProfessional] = useState<string>("all");
   const [commissionStatus, setCommissionStatus] = useState<string>("all");
 
-  const { professionalId: currentProfessionalId, isProfessionalUser } = useCurrentProfessional();
+  const { professionalId: currentProfessionalId, isProfessionalUser, isLoading: loadingCurrentProfessional } = useCurrentProfessional();
   const { professionals, isLoading: loadingProfessionals } = useProfessionals();
 
   // Auto-select the current professional's ID when they are a professional user
   useEffect(() => {
-    if (isProfessionalUser && currentProfessionalId && selectedProfessional === "all") {
+    if (isProfessionalUser && currentProfessionalId) {
       setSelectedProfessional(currentProfessionalId);
     }
   }, [isProfessionalUser, currentProfessionalId]);
@@ -322,7 +322,7 @@ export default function Comissoes() {
 
   const selectedProfessionalData = professionals.find(p => p.id === selectedProfessional);
 
-  const isLoading = loadingProfessionals || loadingComandas || loadingServices || loadingClients;
+  const isLoading = loadingProfessionals || loadingComandas || loadingServices || loadingClients || (isProfessionalUser && loadingCurrentProfessional);
 
   if (isLoading) {
     return (
