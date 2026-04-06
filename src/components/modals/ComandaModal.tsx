@@ -16,7 +16,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useComandaItems, ComandaItem, Comanda } from "@/hooks/useComandas";
+import { useComandaItems, useComandas, ComandaItem, Comanda } from "@/hooks/useComandas";
 import { supabase } from "@/lib/dynamicSupabaseClient";
 import { sendEmail } from "@/lib/sendEmail";
 import { useToast } from "@/hooks/use-toast";
@@ -106,6 +106,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("itens");
   const { items, isLoading, addItem, removeItem, isAdding, isRemoving } = useComandaItems(comanda?.id || null);
+  const { reopenComanda, isReopening } = useComandas();
   const { calculateServiceCost } = useAllServiceProducts();
   const { deductStockForServices } = useStockMovements();
   const { bankAccounts } = useBankAccounts();
@@ -873,6 +874,29 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
     }
   };
 
+  const handleReopenComanda = async () => {
+    if (!comanda || !comanda.caixa_id) return;
+
+    // Check if the linked caixa is open
+    const linkedCaixa = openCaixas.find(c => c.id === comanda.caixa_id && !c.closed_at);
+    if (!linkedCaixa) {
+      toast({
+        title: "Caixa fechado",
+        description: "Para reabrir esta comanda, primeiro reabra o caixa associado na página Financeiro → Histórico.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await reopenComanda({ comandaId: comanda.id, caixaId: comanda.caixa_id });
+      queryClient.invalidateQueries({ queryKey: ["comanda_items", comanda.id] });
+      onClose();
+    } catch {
+      // Error toast is handled by the mutation
+    }
+  };
+
   const handleFinalizeComanda = async () => {
     if (!comanda || !salonId) return;
 
@@ -974,10 +998,11 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             fee_amount: feeAmount,
             net_amount: netAmount,
           });
-        }
-        // Track totals for all payments (new and existing)
-        if (payment.method in paymentTotals) {
-          paymentTotals[payment.method as keyof typeof paymentTotals] += payment.amount;
+
+          // Track totals only for NEW payments to avoid double-counting
+          if (payment.method in paymentTotals) {
+            paymentTotals[payment.method as keyof typeof paymentTotals] += payment.amount;
+          }
         }
       }
 
@@ -1892,14 +1917,26 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
               <Trash2 className="h-4 w-4" />
             </Button>
             <Button variant="outline" onClick={onClose}>Confirmar</Button>
-            <Button
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={handleFinalizeComanda}
-              disabled={isClosing || !canFinalizeComanda}
-              title={!canFinalizeComanda ? "Você só pode finalizar suas próprias comandas" : undefined}
-            >
-              {isClosing ? "Finalizando..." : !canFinalizeComanda ? "Sem permissão" : "Finalizar Comanda"}
-            </Button>
+            {comanda?.closed_at ? (
+              <Button
+                variant="outline"
+                className="gap-2 border-orange-500 text-orange-600 hover:bg-orange-50"
+                onClick={handleReopenComanda}
+                disabled={isReopening}
+              >
+                <RefreshCw className={`h-4 w-4 ${isReopening ? "animate-spin" : ""}`} />
+                {isReopening ? "Reabrindo..." : "Reabrir Comanda"}
+              </Button>
+            ) : (
+              <Button
+                className="bg-destructive hover:bg-destructive/90"
+                onClick={handleFinalizeComanda}
+                disabled={isClosing || !canFinalizeComanda}
+                title={!canFinalizeComanda ? "Você só pode finalizar suas próprias comandas" : undefined}
+              >
+                {isClosing ? "Finalizando..." : !canFinalizeComanda ? "Sem permissão" : "Finalizar Comanda"}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

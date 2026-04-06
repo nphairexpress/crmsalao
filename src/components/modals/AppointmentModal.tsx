@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -25,6 +25,7 @@ import { Service } from "@/hooks/useServices";
 import { DollarSign, Plus, X } from "lucide-react";
 import { isSameDay, isFuture, startOfDay } from "date-fns";
 import { ClientSearchSelect } from "@/components/shared/ClientSearchSelect";
+import { ServiceSearchSelect } from "@/components/shared/ServiceSearchSelect";
 import { supabase } from "@/lib/dynamicSupabaseClient";
 
 interface ServiceBlock {
@@ -101,8 +102,13 @@ export function AppointmentModal({
 
   const isEditing = !!appointment;
 
-  // Initialize form
+  // Initialize form only when modal opens (not on every prop change)
+  const prevOpenRef = useRef(false);
   useEffect(() => {
+    const justOpened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (!justOpened) return;
+
     if (appointment) {
       const d = new Date(appointment.scheduled_at);
       setClientId(appointment.client_id || "");
@@ -136,7 +142,7 @@ export function AppointmentModal({
         },
       ]);
     }
-  }, [appointment, open, defaultDate, defaultProfessionalId]);
+  }, [open, appointment, defaultDate, defaultProfessionalId]);
 
   const updateBlock = useCallback(
     (index: number, updates: Partial<ServiceBlock>) => {
@@ -456,21 +462,15 @@ export function AppointmentModal({
                 <div className="grid grid-cols-2 gap-3 pr-6">
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Serviço *</Label>
-                    <Select
-                      value={block.service_id}
-                      onValueChange={(v) => handleServiceChangeInBlock(index, v)}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {activeServices.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name} - R$ {Number(s.price).toFixed(2)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ServiceSearchSelect
+                      services={activeServices}
+                      value={block.service_id || null}
+                      onSelect={(serviceId) => {
+                        if (serviceId) handleServiceChangeInBlock(index, serviceId);
+                      }}
+                      placeholder="Buscar serviço..."
+                      showPrice
+                    />
                   </div>
 
                   <div className="space-y-1">

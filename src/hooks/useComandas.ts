@@ -247,6 +247,76 @@ export function useComandas() {
     },
   });
 
+  const reopenComandaMutation = useMutation({
+    mutationFn: async ({ comandaId, caixaId }: { comandaId: string; caixaId: string }) => {
+      // 1. Get payments linked to this comanda to subtract from caixa
+      const { data: payments, error: paymentsError } = await supabase
+        .from("payments")
+        .select("payment_method, amount")
+        .eq("comanda_id", comandaId);
+      if (paymentsError) throw paymentsError;
+
+      // 2. Calculate totals to subtract per payment method
+      const totalsToSubtract = {
+        cash: 0, pix: 0, credit_card: 0, debit_card: 0, other: 0,
+      };
+      for (const p of (payments || [])) {
+        const method = p.payment_method as keyof typeof totalsToSubtract;
+        if (method in totalsToSubtract) {
+          totalsToSubtract[method] += Number(p.amount);
+        }
+      }
+
+      // 3. Get current caixa totals and subtract
+      const { data: currentCaixa, error: caixaError } = await supabase
+        .from("caixas")
+        .select("*")
+        .eq("id", caixaId)
+        .single();
+      if (caixaError) throw caixaError;
+      if (currentCaixa.closed_at) throw new Error("O caixa precisa estar aberto para reabrir a comanda.");
+
+      await supabase
+        .from("caixas")
+        .update({
+          total_cash: Math.max(0, (currentCaixa.total_cash || 0) - totalsToSubtract.cash),
+          total_pix: Math.max(0, (currentCaixa.total_pix || 0) - totalsToSubtract.pix),
+          total_credit_card: Math.max(0, (currentCaixa.total_credit_card || 0) - totalsToSubtract.credit_card),
+          total_debit_card: Math.max(0, (currentCaixa.total_debit_card || 0) - totalsToSubtract.debit_card),
+          total_other: Math.max(0, (currentCaixa.total_other || 0) - totalsToSubtract.other),
+        })
+        .eq("id", caixaId);
+
+      // 4. Delete existing payments (they'll be re-created when closing again)
+      await supabase
+        .from("payments")
+        .delete()
+        .eq("comanda_id", comandaId);
+
+      // 5. Reopen the comanda
+      const { data, error } = await supabase
+        .from("comandas")
+        .update({
+          closed_at: null,
+          is_paid: false,
+          caixa_id: null,
+        })
+        .eq("id", comandaId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comandas", salonId] });
+      queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
+      toast({ title: "Comanda reaberta com sucesso!", description: "Os valores foram descontados do caixa." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao reabrir comanda", description: error.message, variant: "destructive" });
+    },
+  });
+
   return {
     comandas: query.data ?? [],
     isLoading: query.isLoading,
@@ -254,10 +324,12 @@ export function useComandas() {
     createComanda: createMutation.mutate,
     updateComanda: updateMutation.mutate,
     closeComanda: closeComandaMutation.mutate,
+    reopenComanda: reopenComandaMutation.mutateAsync,
     findOrCreateTodayComanda,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isClosing: closeComandaMutation.isPending,
+    isReopening: reopenComandaMutation.isPending,
   };
 }
 

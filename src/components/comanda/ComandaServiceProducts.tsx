@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Plus, Check, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, Plus, Check, Trash2, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useAllServiceProducts } from "@/hooks/useServiceProducts";
 import { useProducts } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
@@ -46,6 +45,7 @@ export function ComandaServiceProducts({
   const [newProductId, setNewProductId] = useState<string>("");
   const [newProductQty, setNewProductQty] = useState<number>(0);
   const [initialized, setInitialized] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
 
   // Get selected product info for the add form
   const selectedNewProduct = allProducts.find(p => p.id === newProductId);
@@ -286,69 +286,94 @@ export function ComandaServiceProducts({
 
           {/* Add new product row */}
           {isAddingProduct ? (
-            <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10 border border-primary/40">
-              <Select value={newProductId} onValueChange={setNewProductId}>
-                <SelectTrigger className="flex-1 h-8 bg-background">
-                  <SelectValue placeholder="Selecione um Produto" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  {availableProducts.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground">
-                      Nenhum produto disponível
-                    </div>
-                  ) : (
-                    availableProducts.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
-                    ))
+            <div className="p-2 rounded-md bg-primary/10 border border-primary/40 space-y-2">
+              {/* Search + quantity row */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar produto..."
+                    className="h-8 pl-8 bg-background text-sm"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    autoFocus={false}
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    step={selectedProductIsFractional ? "0.1" : "1"}
+                    placeholder="Qtd"
+                    className="w-16 h-8 text-center bg-background"
+                    value={newProductQty || ""}
+                    onChange={(e) => setNewProductQty(parseFloat(e.target.value) || 0)}
+                  />
+                  {selectedNewProduct && (
+                    <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[30px]">
+                      {getUnitLabel(selectedNewProduct.unit_of_measure || "unidade")}
+                    </span>
                   )}
-                </SelectContent>
-              </Select>
-              
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  min="0"
-                  step={selectedProductIsFractional ? "0.1" : "1"}
-                  placeholder="Qtd"
-                  className="w-16 h-8 text-center bg-background"
-                  value={newProductQty || ""}
-                  onChange={(e) => setNewProductQty(parseFloat(e.target.value) || 0)}
-                />
-                {selectedNewProduct && (
-                  <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[30px]">
-                    {getUnitLabel(selectedNewProduct.unit_of_measure || "unidade")}
-                  </span>
-                )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
+                  onClick={handleAddProduct}
+                  disabled={!newProductId}
+                  title="Adicionar"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setIsAddingProduct(false);
+                    setNewProductId("");
+                    setNewProductQty(1);
+                    setProductSearch("");
+                  }}
+                  title="Cancelar"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
-                onClick={handleAddProduct}
-                disabled={!newProductId}
-                title="Adicionar"
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-              
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setIsAddingProduct(false);
-                  setNewProductId("");
-                  setNewProductQty(1);
-                }}
-                title="Cancelar"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {/* Product list */}
+              {(() => {
+                const filtered = availableProducts.filter(p =>
+                  p.name.toLowerCase().includes(productSearch.toLowerCase())
+                );
+                return (
+                  <div className="max-h-32 overflow-y-auto rounded border bg-background">
+                    {filtered.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Nenhum produto encontrado
+                      </div>
+                    ) : (
+                      filtered.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          className={cn(
+                            "w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors flex items-center justify-between",
+                            newProductId === product.id && "bg-primary/10 font-medium"
+                          )}
+                          onClick={() => setNewProductId(product.id)}
+                        >
+                          <span>{product.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {getUnitLabel(product.unit_of_measure || "unidade")}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <Button

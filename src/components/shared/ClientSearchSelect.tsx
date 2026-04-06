@@ -50,6 +50,8 @@ export function ClientSearchSelect({
     onSelect(clientId);
     setSearch("");
     setOpen(false);
+    // Remove focus from input so cursor disappears and dropdown stays closed
+    inputRef.current?.blur();
   };
 
   const handleCreateNew = () => {
