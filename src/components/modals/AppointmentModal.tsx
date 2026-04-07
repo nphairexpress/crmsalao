@@ -584,7 +584,9 @@ export function AppointmentModal({
                 <SelectItem value="confirmed">Confirmado</SelectItem>
                 <SelectItem value="in_progress">Em Atendimento</SelectItem>
                 <SelectItem value="completed">Finalizado</SelectItem>
-                <SelectItem value="paid">Pago</SelectItem>
+                {status === "paid" && (
+                  <SelectItem value="paid" disabled>Pago (automático)</SelectItem>
+                )}
                 <SelectItem value="no_show">Não Compareceu</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
               </SelectContent>

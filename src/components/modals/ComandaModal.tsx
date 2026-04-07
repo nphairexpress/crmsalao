@@ -1625,8 +1625,8 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             </TabsContent>
 
             <TabsContent value="pagamento" className="space-y-4 mt-4">
-              {/* Caixa Selection - for pending comandas */}
-              {!isFromToday && (
+              {/* Caixa Selection - show when not from today OR when master/manager has multiple caixas */}
+              {(!isFromToday || (isMaster && availableCaixas.length > 1)) && (
                 <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
