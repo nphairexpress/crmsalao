@@ -13,7 +13,7 @@ export const SETUP_SCHEMA_SQL = `
 CREATE TYPE public.app_role AS ENUM ('admin', 'manager', 'receptionist', 'financial', 'professional');
 CREATE TYPE public.appointment_status AS ENUM ('scheduled', 'confirmed', 'in_progress', 'completed', 'paid', 'no_show', 'cancelled');
 CREATE TYPE public.transaction_type AS ENUM ('income', 'expense');
-CREATE TYPE public.payment_method AS ENUM ('cash', 'pix', 'credit_card', 'debit_card', 'other');
+CREATE TYPE public.payment_method AS ENUM ('cash', 'pix', 'credit_card', 'debit_card', 'other', 'installment');
 CREATE TYPE public.stock_movement_type AS ENUM ('entry', 'exit', 'adjustment');
 
 -- 2. FUNÇÕES AUXILIARES

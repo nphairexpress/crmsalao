@@ -229,7 +229,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
       await supabase.from("stock_movements").insert({
         salon_id: salonId,
         product_id: product.id,
-        movement_type: "saida",
+        movement_type: "exit",
         quantity: 1,
         previous_stock: product.current_stock,
         new_stock: product.current_stock - 1,
