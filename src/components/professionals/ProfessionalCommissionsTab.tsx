@@ -19,6 +19,8 @@ import { Link } from "react-router-dom";
 interface ProfessionalCommissionsTabProps {
   professionalId: string;
   defaultCommission: number;
+  packageCommission?: number;
+  onPackageCommissionChange?: (value: number) => void;
 }
 
 interface CategoryCommission {
@@ -29,7 +31,7 @@ interface CategoryCommission {
   duration_minutes: number;
 }
 
-export function ProfessionalCommissionsTab({ professionalId, defaultCommission }: ProfessionalCommissionsTabProps) {
+export function ProfessionalCommissionsTab({ professionalId, defaultCommission, packageCommission = 0, onPackageCommissionChange }: ProfessionalCommissionsTabProps) {
   const { services, isLoading: loadingServices } = useServices();
   const { commissions, isLoading: loadingCommissions, bulkUpsertCommissions, isUpserting } = useProfessionalCommissions(professionalId);
   
@@ -132,6 +134,30 @@ export function ProfessionalCommissionsTab({ professionalId, defaultCommission }
           <Link to="/servicos" className="text-primary underline">Clique aqui</Link> para cadastrá-la!
         </p>
       </div>
+
+      {/* Package commission per professional */}
+      {onPackageCommissionChange && (
+        <div className="border rounded-lg p-4 bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">Comissão sobre venda de Pacotes</p>
+              <p className="text-xs text-muted-foreground">Percentual que este profissional recebe ao vender um pacote</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={packageCommission}
+                onChange={(e) => onPackageCommissionChange(parseFloat(e.target.value) || 0)}
+                className="w-20 text-center"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="border rounded-lg">
         <Table>

@@ -664,6 +664,10 @@ function ProfessionalForm({ professional }: { professional: Professional }) {
             <ProfessionalCommissionsTab
               professionalId={professional.id}
               defaultCommission={professional.commission_percent || 0}
+              packageCommission={professional.package_commission_percent || 0}
+              onPackageCommissionChange={(value) => {
+                updateProfessional({ id: professional.id, package_commission_percent: value } as any);
+              }}
             />
           </AccordionContent>
         </AccordionItem>

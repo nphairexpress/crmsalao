@@ -138,6 +138,7 @@ CREATE TABLE public.professionals (
   role TEXT,
   description TEXT,
   commission_percent NUMERIC DEFAULT 0,
+  package_commission_percent NUMERIC DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
   can_be_assistant BOOLEAN DEFAULT false,
   has_schedule BOOLEAN DEFAULT true,

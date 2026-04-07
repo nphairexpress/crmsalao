@@ -14,7 +14,6 @@ import { useComandas } from "@/hooks/useComandas";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
 import { useCurrentProfessional } from "@/hooks/useCurrentProfessional";
-import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/dynamicSupabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,7 +58,6 @@ export default function Comissoes() {
   const { comandas, isLoading: loadingComandas } = useComandas();
   const { services, isLoading: loadingServices } = useServices();
   const { clients, isLoading: loadingClients } = useClients();
-  const { settings: commissionSettings } = useCommissionSettings();
 
   // Load per-professional per-service commission overrides
   const { data: profServiceCommissions } = useQuery({
@@ -148,12 +146,9 @@ export default function Comissoes() {
         let serviceName = item.description || "Serviço";
         let commissionPercent = selectedProf.commission_percent || 0;
 
-        // Package items use package_commission_percent from settings
+        // Package items use package_commission_percent from the professional
         if (item.item_type === "package") {
-          if (commissionSettings.package_commission_enabled && commissionSettings.package_commission_percent > 0) {
-            commissionPercent = commissionSettings.package_commission_percent;
-          }
-          // If package commission not configured, fall through to professional default
+          commissionPercent = selectedProf.package_commission_percent || commissionPercent;
         } else if (item.service_id && serviceMap.has(item.service_id)) {
           const serviceInfo = serviceMap.get(item.service_id)!;
           serviceName = serviceInfo.name;
@@ -200,7 +195,7 @@ export default function Comissoes() {
     });
 
     return items;
-  }, [selectedProfessional, filteredComandas, professionals, serviceMap, clientMap, profServiceCommMap, commissionSettings]);
+  }, [selectedProfessional, filteredComandas, professionals, serviceMap, clientMap, profServiceCommMap]);
 
   // Calculate totals for selected professional
   const professionalTotals = useMemo(() => {
@@ -271,9 +266,7 @@ export default function Comissoes() {
         let commissionPercent = profData.professional.commission_percent || 0;
 
         if (item.item_type === "package") {
-          if (commissionSettings.package_commission_enabled && commissionSettings.package_commission_percent > 0) {
-            commissionPercent = commissionSettings.package_commission_percent;
-          }
+          commissionPercent = profData.professional.package_commission_percent || commissionPercent;
         } else if (item.service_id && serviceMap.has(item.service_id)) {
           commissionPercent = serviceMap.get(item.service_id)?.commission_percent || commissionPercent;
         }
@@ -305,7 +298,7 @@ export default function Comissoes() {
     });
 
     return Array.from(commissionMap.values()).filter(c => c.itemCount > 0);
-  }, [professionals, filteredComandas, serviceMap, profServiceCommMap, commissionSettings]);
+  }, [professionals, filteredComandas, serviceMap, profServiceCommMap]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);

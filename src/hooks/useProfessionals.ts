@@ -18,6 +18,7 @@ export interface Professional {
   avatar_url: string | null;
   specialty: string | null;
   commission_percent: number | null;
+  package_commission_percent: number | null;
   is_active: boolean;
   can_be_assistant: boolean | null;
   has_schedule: boolean | null;
@@ -52,6 +53,7 @@ export interface ProfessionalInput {
   mobile?: string;
   specialty?: string;
   commission_percent?: number;
+  package_commission_percent?: number;
   is_active?: boolean;
   can_be_assistant?: boolean;
   has_schedule?: boolean;
