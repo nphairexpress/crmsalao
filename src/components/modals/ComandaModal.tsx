@@ -875,25 +875,44 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   };
 
   const handleReopenComanda = async () => {
-    if (!comanda || !comanda.caixa_id) return;
-
-    // Check if the linked caixa is open
-    const linkedCaixa = openCaixas.find(c => c.id === comanda.caixa_id && !c.closed_at);
-    if (!linkedCaixa) {
-      toast({
-        title: "Caixa fechado",
-        description: "Para reabrir esta comanda, primeiro reabra o caixa associado na página Financeiro → Histórico.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!comanda) return;
 
     try {
-      await reopenComanda({ comandaId: comanda.id, caixaId: comanda.caixa_id });
+      if (comanda.caixa_id) {
+        // Check if the linked caixa is open — if so, subtract values from it
+        const linkedCaixa = openCaixas.find(c => c.id === comanda.caixa_id && !c.closed_at);
+        if (linkedCaixa) {
+          await reopenComanda({ comandaId: comanda.id, caixaId: comanda.caixa_id });
+        } else {
+          // Caixa already closed — just reopen the comanda without adjusting caixa values
+          const { error } = await supabase
+            .from("comandas")
+            .update({ closed_at: null, is_paid: false, caixa_id: null })
+            .eq("id", comanda.id);
+          if (error) throw error;
+
+          // Delete payments so they can be re-created on next close
+          await supabase.from("payments").delete().eq("comanda_id", comanda.id);
+
+          queryClient.invalidateQueries({ queryKey: ["comandas"] });
+          toast({ title: "Comanda reaberta com sucesso!", description: "O caixa original já estava fechado. Ao finalizar, vincule a um caixa aberto." });
+        }
+      } else {
+        // No caixa linked — just reopen
+        const { error } = await supabase
+          .from("comandas")
+          .update({ closed_at: null, is_paid: false })
+          .eq("id", comanda.id);
+        if (error) throw error;
+
+        queryClient.invalidateQueries({ queryKey: ["comandas"] });
+        toast({ title: "Comanda reaberta com sucesso!" });
+      }
+
       queryClient.invalidateQueries({ queryKey: ["comanda_items", comanda.id] });
       onClose();
-    } catch {
-      // Error toast is handled by the mutation
+    } catch (err: any) {
+      toast({ title: "Erro ao reabrir comanda", description: err?.message || "Tente novamente.", variant: "destructive" });
     }
   };
 
