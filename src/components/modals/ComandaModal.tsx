@@ -243,10 +243,16 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
     }
   };
 
-  // Determine if comanda is from today
-  const comandaDate = comanda ? new Date(comanda.created_at) : new Date();
+  // Determine if comanda is from today (comandaDate is editable by master)
+  const [comandaDateOverride, setComandaDateOverride] = useState<Date | null>(null);
+  const comandaDate = comandaDateOverride || (comanda ? new Date(comanda.created_at) : new Date());
   const today = new Date();
   const isFromToday = isSameDay(comandaDate, today);
+
+  // Reset override when comanda changes
+  useEffect(() => {
+    setComandaDateOverride(null);
+  }, [comanda?.id]);
 
   // Check if comanda's caixa is closed (locked state)
   const comandaCaixa = comanda?.caixa_id ? openCaixas.find(c => c.id === comanda.caixa_id) : null;
@@ -1273,7 +1279,27 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             </DialogTitle>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>{format(new Date(comanda.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+              {isMaster && !comanda.closed_at ? (
+                <Input
+                  type="date"
+                  className="h-7 w-36 text-sm"
+                  value={format(comandaDate, "yyyy-MM-dd")}
+                  max={format(today, "yyyy-MM-dd")}
+                  onChange={async (e) => {
+                    if (!e.target.value || !comanda) return;
+                    const newDate = new Date(e.target.value + "T12:00:00");
+                    setComandaDateOverride(newDate);
+                    // Update in database
+                    await supabase
+                      .from("comandas")
+                      .update({ created_at: newDate.toISOString() })
+                      .eq("id", comanda.id);
+                    queryClient.invalidateQueries({ queryKey: ["comandas", salonId] });
+                  }}
+                />
+              ) : (
+                <span>{format(comandaDate, "dd/MM/yyyy", { locale: ptBR })}</span>
+              )}
             </div>
           </div>
         </DialogHeader>
