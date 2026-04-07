@@ -11,7 +11,7 @@ export const SETUP_SCHEMA_SQL = `
 
 -- 1. ENUMS
 CREATE TYPE public.app_role AS ENUM ('admin', 'manager', 'receptionist', 'financial', 'professional');
-CREATE TYPE public.appointment_status AS ENUM ('scheduled', 'confirmed', 'in_progress', 'completed', 'no_show', 'cancelled');
+CREATE TYPE public.appointment_status AS ENUM ('scheduled', 'confirmed', 'in_progress', 'completed', 'paid', 'no_show', 'cancelled');
 CREATE TYPE public.transaction_type AS ENUM ('income', 'expense');
 CREATE TYPE public.payment_method AS ENUM ('cash', 'pix', 'credit_card', 'debit_card', 'other');
 CREATE TYPE public.stock_movement_type AS ENUM ('entry', 'exit', 'adjustment');
@@ -247,6 +247,7 @@ CREATE TABLE public.comandas (
   professional_id UUID REFERENCES public.professionals(id) ON DELETE SET NULL,
   appointment_id UUID REFERENCES public.appointments(id) ON DELETE SET NULL,
   caixa_id UUID,
+  comanda_number INTEGER,
   subtotal NUMERIC NOT NULL DEFAULT 0,
   discount NUMERIC DEFAULT 0,
   total NUMERIC NOT NULL DEFAULT 0,
@@ -302,6 +303,7 @@ CREATE TABLE public.card_brands (
   credit_2_6_fee_percent NUMERIC NOT NULL DEFAULT 0,
   credit_7_12_fee_percent NUMERIC NOT NULL DEFAULT 0,
   credit_13_18_fee_percent NUMERIC NOT NULL DEFAULT 0,
+  credit_installment_fees JSONB DEFAULT '{}',
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -902,6 +904,23 @@ CREATE TRIGGER update_services_updated_at BEFORE UPDATE ON public.services FOR E
 CREATE TRIGGER update_professionals_updated_at BEFORE UPDATE ON public.professionals FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON public.appointments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_comandas_updated_at BEFORE UPDATE ON public.comandas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Auto-increment comanda_number per salon
+CREATE OR REPLACE FUNCTION public.set_comanda_number()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.comanda_number IS NULL THEN
+    SELECT COALESCE(MAX(comanda_number), 0) + 1 INTO NEW.comanda_number
+    FROM comandas WHERE salon_id = NEW.salon_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trg_set_comanda_number BEFORE INSERT ON public.comandas FOR EACH ROW EXECUTE FUNCTION set_comanda_number();
+
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_caixas_updated_at BEFORE UPDATE ON public.caixas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_card_brands_updated_at BEFORE UPDATE ON public.card_brands FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
