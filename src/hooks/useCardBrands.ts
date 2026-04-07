@@ -12,9 +12,28 @@ export interface CardBrand {
   credit_2_6_fee_percent: number;
   credit_7_12_fee_percent: number;
   credit_13_18_fee_percent: number;
+  credit_installment_fees: Record<string, number> | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// Get fee percent for a specific installment count
+export function getCardFeePercent(brand: CardBrand, method: 'credit_card' | 'debit_card', installments: number): number {
+  if (method === 'debit_card') return brand.debit_fee_percent;
+
+  // Prefer per-installment fees if available
+  if (brand.credit_installment_fees && Object.keys(brand.credit_installment_fees).length > 0) {
+    if (installments <= 1) return brand.credit_fee_percent;
+    const fee = brand.credit_installment_fees[String(installments)];
+    if (fee !== undefined) return fee;
+  }
+
+  // Fallback to range-based fees
+  if (installments <= 1) return brand.credit_fee_percent;
+  if (installments <= 6) return brand.credit_2_6_fee_percent || 0;
+  if (installments <= 12) return brand.credit_7_12_fee_percent || 0;
+  return brand.credit_13_18_fee_percent || 0;
 }
 
 export interface CardBrandInput {
@@ -24,6 +43,7 @@ export interface CardBrandInput {
   credit_2_6_fee_percent: number;
   credit_7_12_fee_percent: number;
   credit_13_18_fee_percent: number;
+  credit_installment_fees?: Record<string, number>;
   is_active?: boolean;
 }
 

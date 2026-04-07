@@ -31,7 +31,7 @@ import { Caixa } from "@/hooks/useCaixas";
 import { useAllServiceProducts } from "@/hooks/useServiceProducts";
 import { useStockMovements } from "@/hooks/useStockMovements";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
-import { useCardBrands } from "@/hooks/useCardBrands";
+import { useCardBrands, getCardFeePercent } from "@/hooks/useCardBrands";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
 import { ComandaServiceProducts } from "@/components/comanda/ComandaServiceProducts";
@@ -1009,17 +1009,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
           if ((payment.method === 'credit_card' || payment.method === 'debit_card') && payment.cardBrandId) {
             const brand = cardBrands.find(b => b.id === payment.cardBrandId);
             if (brand) {
-              let feePercent = 0;
-              if (payment.method === 'debit_card') {
-                feePercent = brand.debit_fee_percent;
-              } else {
-                // Credit card: fee depends on number of installments
-                const inst = payment.installments || 1;
-                if (inst <= 1) feePercent = brand.credit_fee_percent;
-                else if (inst <= 6) feePercent = brand.credit_2_6_fee_percent || 0;
-                else if (inst <= 12) feePercent = brand.credit_7_12_fee_percent || 0;
-                else feePercent = brand.credit_13_18_fee_percent || 0;
-              }
+              const feePercent = getCardFeePercent(brand, payment.method as 'credit_card' | 'debit_card', payment.installments || 1);
               feeAmount = payment.amount * (feePercent / 100);
               netAmount = payment.amount - feeAmount;
             }
@@ -1837,16 +1827,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                             </SelectTrigger>
                             <SelectContent>
                               {cardBrands.filter(b => b.is_active).map((brand) => {
-                                let feePercent = 0;
-                                if (payment.method === 'debit_card') {
-                                  feePercent = brand.debit_fee_percent;
-                                } else {
-                                  const inst = payment.installments || 1;
-                                  if (inst <= 1) feePercent = brand.credit_fee_percent;
-                                  else if (inst <= 6) feePercent = brand.credit_2_6_fee_percent || 0;
-                                  else if (inst <= 12) feePercent = brand.credit_7_12_fee_percent || 0;
-                                  else feePercent = brand.credit_13_18_fee_percent || 0;
-                                }
+                                const feePercent = getCardFeePercent(brand, payment.method as 'credit_card' | 'debit_card', payment.installments || 1);
                                 return (
                                   <SelectItem key={brand.id} value={brand.id}>
                                     {brand.name} ({feePercent}%)
