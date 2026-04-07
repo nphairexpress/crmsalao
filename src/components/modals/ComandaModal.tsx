@@ -759,9 +759,18 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   };
 
   const updatePayment = (paymentId: string, field: string, value: string | number) => {
-    setPayments(prev => prev.map(p => 
-      p.id === paymentId ? { ...p, [field]: value } : p
-    ));
+    setPayments(prev => prev.map(p => {
+      if (p.id !== paymentId) return p;
+      const updated = { ...p, [field]: value };
+      // Auto-select card brand when switching to card payment and only one brand exists
+      if (field === 'method' && (value === 'credit_card' || value === 'debit_card')) {
+        const activeBrands = cardBrands.filter(b => b.is_active);
+        if (activeBrands.length === 1 && !updated.cardBrandId) {
+          updated.cardBrandId = activeBrands[0].id;
+        }
+      }
+      return updated;
+    }));
   };
 
   const subtotal = editableItems.reduce((acc, item) => acc + Number(item.total_price), 0);
