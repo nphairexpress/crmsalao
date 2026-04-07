@@ -13,6 +13,7 @@ import { useProfessionals } from "@/hooks/useProfessionals";
 import { useComandas } from "@/hooks/useComandas";
 import { useServices } from "@/hooks/useServices";
 import { useClients } from "@/hooks/useClients";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useCurrentProfessional } from "@/hooks/useCurrentProfessional";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/dynamicSupabaseClient";
@@ -58,6 +59,7 @@ export default function Comissoes() {
   const { comandas, isLoading: loadingComandas } = useComandas();
   const { services, isLoading: loadingServices } = useServices();
   const { clients, isLoading: loadingClients } = useClients();
+  const { settings: commissionSettings } = useCommissionSettings();
 
   // Load per-professional per-service commission overrides
   const { data: profServiceCommissions } = useQuery({
@@ -165,12 +167,17 @@ export default function Comissoes() {
 
         const serviceValue = item.total_price || 0;
         const productCost = item.product_cost || 0;
-        
+
         // Calculate proportional card fee for this item
         const cardFee = calculateItemCardFee(comanda, serviceValue);
-        
-        // Net value = service value - product cost - card fee
-        const netValue = serviceValue - productCost - cardFee;
+
+        // Calculate admin fee if enabled
+        const adminFee = commissionSettings.admin_fee_enabled
+          ? serviceValue * (commissionSettings.admin_fee_percent / 100)
+          : 0;
+
+        // Net value = service value - product cost - card fee - admin fee
+        const netValue = serviceValue - productCost - cardFee - adminFee;
         const commissionValue = (netValue * commissionPercent) / 100;
 
         // Use created_at for the date display to show when service was performed
@@ -195,7 +202,7 @@ export default function Comissoes() {
     });
 
     return items;
-  }, [selectedProfessional, filteredComandas, professionals, serviceMap, clientMap, profServiceCommMap]);
+  }, [selectedProfessional, filteredComandas, professionals, serviceMap, clientMap, profServiceCommMap, commissionSettings]);
 
   // Calculate totals for selected professional
   const professionalTotals = useMemo(() => {
@@ -279,12 +286,17 @@ export default function Comissoes() {
 
         const itemTotal = item.total_price || 0;
         const productCost = item.product_cost || 0;
-        
+
         // Calculate proportional card fee for this item
         const cardFee = calculateItemCardFee(comanda, itemTotal);
-        
-        // Net value = item total - product cost - card fee
-        const netValue = itemTotal - productCost - cardFee;
+
+        // Calculate admin fee if enabled
+        const adminFee = commissionSettings.admin_fee_enabled
+          ? itemTotal * (commissionSettings.admin_fee_percent / 100)
+          : 0;
+
+        // Net value = item total - product cost - card fee - admin fee
+        const netValue = itemTotal - productCost - cardFee - adminFee;
         const commission = (netValue * commissionPercent) / 100;
 
         profData.totalServices += itemTotal;
@@ -298,7 +310,7 @@ export default function Comissoes() {
     });
 
     return Array.from(commissionMap.values()).filter(c => c.itemCount > 0);
-  }, [professionals, filteredComandas, serviceMap, profServiceCommMap]);
+  }, [professionals, filteredComandas, serviceMap, profServiceCommMap, commissionSettings]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);

@@ -34,9 +34,14 @@ interface CategoryCommission {
 export function ProfessionalCommissionsTab({ professionalId, defaultCommission, packageCommission = 0, onPackageCommissionChange }: ProfessionalCommissionsTabProps) {
   const { services, isLoading: loadingServices } = useServices();
   const { commissions, isLoading: loadingCommissions, bulkUpsertCommissions, isUpserting } = useProfessionalCommissions(professionalId);
-  
+
   const [categoryData, setCategoryData] = useState<CategoryCommission[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [localPackageCommission, setLocalPackageCommission] = useState(packageCommission);
+
+  useEffect(() => {
+    setLocalPackageCommission(packageCommission);
+  }, [packageCommission]);
 
   // Get unique categories from services
   const categories = [...new Set(services.map(s => s.category || "Sem Categoria"))];
@@ -149,8 +154,13 @@ export function ProfessionalCommissionsTab({ professionalId, defaultCommission, 
                 min={0}
                 max={100}
                 step={0.5}
-                value={packageCommission}
-                onChange={(e) => onPackageCommissionChange(parseFloat(e.target.value) || 0)}
+                value={localPackageCommission}
+                onChange={(e) => setLocalPackageCommission(parseFloat(e.target.value) || 0)}
+                onBlur={() => {
+                  if (localPackageCommission !== packageCommission) {
+                    onPackageCommissionChange(localPackageCommission);
+                  }
+                }}
                 className="w-20 text-center"
               />
               <span className="text-sm text-muted-foreground">%</span>
