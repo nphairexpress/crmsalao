@@ -28,6 +28,7 @@ export function CloseCaixaModal({ open, onClose, onConfirm, caixa, isLoading }: 
   const [checkingComandas, setCheckingComandas] = useState(false);
   const [totalCredits, setTotalCredits] = useState(0);
   const [totalDebts, setTotalDebts] = useState(0);
+  const [realTotals, setRealTotals] = useState<{cash:number;pix:number;credit_card:number;debit_card:number;other:number}|null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [closedBalanceValue, setClosedBalanceValue] = useState(0);
   const [closedNotes, setClosedNotes] = useState<string | undefined>();
@@ -36,28 +37,73 @@ export function CloseCaixaModal({ open, onClose, onConfirm, caixa, isLoading }: 
 
   useEffect(() => {
     if (open && caixa?.id && salonId) {
-      checkOpenComandas();
+      recalculateAndCheck();
       fetchCreditsAndDebts();
     }
   }, [open, caixa?.id, salonId]);
 
-  const checkOpenComandas = async () => {
+  // Recalculate caixa totals from actual payments + check open comandas
+  const recalculateAndCheck = async () => {
     if (!caixa?.id || !salonId) return;
-    
+
     setCheckingComandas(true);
     try {
-      const { data, error } = await supabase
+      // 1. Check open comandas
+      const { data: openCmdData } = await supabase
         .from("comandas")
         .select("id", { count: "exact" })
         .eq("salon_id", salonId)
         .eq("caixa_id", caixa.id)
         .is("closed_at", null);
 
-      if (!error) {
-        setOpenComandasCount(data?.length || 0);
+      setOpenComandasCount(openCmdData?.length || 0);
+
+      // 2. Recalculate totals from actual payment records
+      const { data: allComandas } = await supabase
+        .from("comandas")
+        .select("id")
+        .eq("caixa_id", caixa.id);
+
+      const comandaIds = (allComandas || []).map(c => c.id);
+      const totals = { cash: 0, pix: 0, credit_card: 0, debit_card: 0, other: 0 };
+
+      if (comandaIds.length > 0) {
+        const { data: payments } = await supabase
+          .from("payments")
+          .select("payment_method, amount")
+          .in("comanda_id", comandaIds);
+
+        for (const p of (payments || [])) {
+          const method = p.payment_method as keyof typeof totals;
+          if (method in totals) totals[method] += Number(p.amount);
+        }
+      }
+
+      // 3. Update caixa if totals don't match
+      const needsUpdate =
+        Math.abs((caixa.total_cash || 0) - totals.cash) > 0.01 ||
+        Math.abs((caixa.total_pix || 0) - totals.pix) > 0.01 ||
+        Math.abs((caixa.total_credit_card || 0) - totals.credit_card) > 0.01 ||
+        Math.abs((caixa.total_debit_card || 0) - totals.debit_card) > 0.01 ||
+        Math.abs((caixa.total_other || 0) - totals.other) > 0.01;
+
+      // Always use recalculated totals for display
+      setRealTotals(totals);
+
+      if (needsUpdate) {
+        await supabase
+          .from("caixas")
+          .update({
+            total_cash: totals.cash,
+            total_pix: totals.pix,
+            total_credit_card: totals.credit_card,
+            total_debit_card: totals.debit_card,
+            total_other: totals.other,
+          })
+          .eq("id", caixa.id);
       }
     } catch (error) {
-      console.error("Error checking open comandas:", error);
+      console.error("Error recalculating caixa:", error);
     } finally {
       setCheckingComandas(false);
     }
@@ -146,13 +192,13 @@ export function CloseCaixaModal({ open, onClose, onConfirm, caixa, isLoading }: 
       : "-";
     const closedAtStr = format(closedAt, "dd/MM/yyyy HH:mm", { locale: ptBR });
     const operatorName = caixa.profile?.full_name || "Operador";
-    const totalReceivedVal =
-      (caixa.total_cash || 0) +
-      (caixa.total_pix || 0) +
-      (caixa.total_credit_card || 0) +
-      (caixa.total_debit_card || 0) +
-      (caixa.total_other || 0);
-    const expectedCashVal = (caixa.opening_balance || 0) + (caixa.total_cash || 0);
+    const pCash = realTotals?.cash ?? (caixa.total_cash || 0);
+    const pPix = realTotals?.pix ?? (caixa.total_pix || 0);
+    const pCredit = realTotals?.credit_card ?? (caixa.total_credit_card || 0);
+    const pDebit = realTotals?.debit_card ?? (caixa.total_debit_card || 0);
+    const pOther = realTotals?.other ?? (caixa.total_other || 0);
+    const totalReceivedVal = pCash + pPix + pCredit + pDebit + pOther;
+    const expectedCashVal = (caixa.opening_balance || 0) + pCash;
     const diffVal = closedBalanceValue - expectedCashVal;
 
     // Build comanda detail rows
@@ -246,11 +292,11 @@ export function CloseCaixaModal({ open, onClose, onConfirm, caixa, isLoading }: 
     <div class="section-title">Movimentação por Forma de Pagamento</div>
     <table>
       <tr><td class="label">Saldo de Abertura:</td><td class="value">${fmtCurr(caixa.opening_balance || 0)}</td></tr>
-      <tr><td class="label">Dinheiro:</td><td class="value">${fmtCurr(caixa.total_cash || 0)}</td></tr>
-      <tr><td class="label">PIX:</td><td class="value">${fmtCurr(caixa.total_pix || 0)}</td></tr>
-      <tr><td class="label">Cartão de Crédito:</td><td class="value">${fmtCurr(caixa.total_credit_card || 0)}</td></tr>
-      <tr><td class="label">Cartão de Débito:</td><td class="value">${fmtCurr(caixa.total_debit_card || 0)}</td></tr>
-      <tr><td class="label">Outros:</td><td class="value">${fmtCurr(caixa.total_other || 0)}</td></tr>
+      <tr><td class="label">Dinheiro:</td><td class="value">${fmtCurr(pCash)}</td></tr>
+      <tr><td class="label">PIX:</td><td class="value">${fmtCurr(pPix)}</td></tr>
+      <tr><td class="label">Cartão de Crédito:</td><td class="value">${fmtCurr(pCredit)}</td></tr>
+      <tr><td class="label">Cartão de Débito:</td><td class="value">${fmtCurr(pDebit)}</td></tr>
+      <tr><td class="label">Outros:</td><td class="value">${fmtCurr(pOther)}</td></tr>
     </table>
     <div class="divider"></div>
     <table>
@@ -302,14 +348,15 @@ export function CloseCaixaModal({ open, onClose, onConfirm, caixa, isLoading }: 
 
   if (!caixa) return null;
 
-  const totalReceived = 
-    (caixa.total_cash || 0) + 
-    (caixa.total_pix || 0) + 
-    (caixa.total_credit_card || 0) + 
-    (caixa.total_debit_card || 0) + 
-    (caixa.total_other || 0);
+  // Use recalculated totals if available, otherwise fallback to caixa fields
+  const displayCash = realTotals?.cash ?? (caixa.total_cash || 0);
+  const displayPix = realTotals?.pix ?? (caixa.total_pix || 0);
+  const displayCredit = realTotals?.credit_card ?? (caixa.total_credit_card || 0);
+  const displayDebit = realTotals?.debit_card ?? (caixa.total_debit_card || 0);
+  const displayOther = realTotals?.other ?? (caixa.total_other || 0);
 
-  const expectedCash = (caixa.opening_balance || 0) + (caixa.total_cash || 0);
+  const totalReceived = displayCash + displayPix + displayCredit + displayDebit + displayOther;
+  const expectedCash = (caixa.opening_balance || 0) + displayCash;
 
   const hasOpenComandas = openComandasCount > 0;
 
@@ -379,19 +426,19 @@ export function CloseCaixaModal({ open, onClose, onConfirm, caixa, isLoading }: 
                 <span className="text-right">{formatCurrency(caixa.opening_balance || 0)}</span>
 
                 <span className="text-muted-foreground">Dinheiro:</span>
-                <span className="text-right">{formatCurrency(caixa.total_cash || 0)}</span>
+                <span className="text-right">{formatCurrency(displayCash)}</span>
 
                 <span className="text-muted-foreground">PIX:</span>
-                <span className="text-right">{formatCurrency(caixa.total_pix || 0)}</span>
+                <span className="text-right">{formatCurrency(displayPix)}</span>
 
                 <span className="text-muted-foreground">Cartão Crédito:</span>
-                <span className="text-right">{formatCurrency(caixa.total_credit_card || 0)}</span>
+                <span className="text-right">{formatCurrency(displayCredit)}</span>
 
                 <span className="text-muted-foreground">Cartão Débito:</span>
-                <span className="text-right">{formatCurrency(caixa.total_debit_card || 0)}</span>
+                <span className="text-right">{formatCurrency(displayDebit)}</span>
 
                 <span className="text-muted-foreground">Outros:</span>
-                <span className="text-right">{formatCurrency(caixa.total_other || 0)}</span>
+                <span className="text-right">{formatCurrency(displayOther)}</span>
 
                 <span className="font-medium border-t pt-2">Total Recebido:</span>
                 <span className="text-right font-medium border-t pt-2">{formatCurrency(totalReceived)}</span>
