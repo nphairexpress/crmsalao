@@ -518,6 +518,7 @@ CREATE TABLE public.commission_settings (
   package_commission_percent NUMERIC NOT NULL DEFAULT 0,
   dual_assistant_rule TEXT NOT NULL DEFAULT 'full_value',
   receipt_footer_message TEXT NOT NULL DEFAULT '',
+  pix_fee_percent NUMERIC NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(salon_id)
@@ -940,6 +941,7 @@ CREATE TRIGGER update_promotions_updated_at BEFORE UPDATE ON public.promotions F
 CREATE INDEX idx_profiles_salon_id ON public.profiles(salon_id);
 CREATE INDEX idx_profiles_user_id ON public.profiles(user_id);
 CREATE INDEX idx_clients_salon_id ON public.clients(salon_id);
+CREATE INDEX idx_clients_name ON public.clients(name);
 CREATE INDEX idx_services_salon_id ON public.services(salon_id);
 CREATE INDEX idx_professionals_salon_id ON public.professionals(salon_id);
 CREATE INDEX idx_appointments_salon_id ON public.appointments(salon_id);
@@ -949,6 +951,8 @@ CREATE INDEX idx_comandas_salon_id ON public.comandas(salon_id);
 CREATE INDEX idx_comanda_items_comanda_id ON public.comanda_items(comanda_id);
 CREATE INDEX idx_comanda_items_professional_id ON public.comanda_items(professional_id);
 CREATE INDEX idx_payments_salon_id ON public.payments(salon_id);
+CREATE INDEX idx_financial_transactions_salon_id ON public.financial_transactions(salon_id);
+CREATE INDEX idx_financial_transactions_date ON public.financial_transactions(transaction_date);
 CREATE INDEX idx_products_salon_id ON public.products(salon_id);
 CREATE INDEX idx_user_roles_user_id ON public.user_roles(user_id);
 
