@@ -69,21 +69,24 @@ export function CaixaSelectModal({
                 (caixa.total_debit_card || 0) + 
                 (caixa.total_other || 0);
               const isSelected = selectedCaixaId === caixa.id;
+              const isSameDate = isSameDay(new Date(caixa.opened_at), comandaDate);
 
               return (
-                <Card 
-                  key={caixa.id} 
-                  className={`cursor-pointer transition-colors hover:border-primary ${
-                    isSelected ? "border-primary bg-primary/5" : ""
+                <Card
+                  key={caixa.id}
+                  className={`transition-colors ${
+                    isSelected ? "border-primary bg-primary/5 cursor-pointer"
+                    : isSameDate ? "cursor-pointer hover:border-primary"
+                    : "opacity-50 cursor-not-allowed border-dashed"
                   }`}
-                  onClick={() => handleSelect(caixa.id)}
+                  onClick={() => isSameDate && handleSelect(caixa.id)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
                           <AvatarImage src={caixa.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
+                          <AvatarFallback className={isSameDate ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}>
                             {initials}
                           </AvatarFallback>
                         </Avatar>
@@ -94,6 +97,11 @@ export function CaixaSelectModal({
                               <Badge variant="default" className="h-5 gap-1">
                                 <Check className="h-3 w-3" />
                                 Selecionado
+                              </Badge>
+                            )}
+                            {!isSameDate && (
+                              <Badge variant="outline" className="h-5 text-xs text-muted-foreground">
+                                Data diferente
                               </Badge>
                             )}
                           </h4>

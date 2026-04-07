@@ -259,10 +259,12 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const canCloseOthers = hasPermission("comandas.view_others");
   const canFinalizeComanda = isMaster || isOwnComanda || canCloseOthers;
 
-  // Get available caixas - master sees all open caixas, others only same-day
+  // Get available caixas - users with permission see all, others see only their own
+  const canViewAllCaixas = isMaster || hasPermission("caixas.view_others");
   const availableCaixas = openCaixas.filter(c => {
     if (c.closed_at) return false;
-    if (isMaster) return true;
+    if (canViewAllCaixas) return true;
+    // Normal users: only their own caixa on the same day
     const caixaDate = new Date(c.opened_at);
     return isSameDay(caixaDate, comandaDate);
   });
@@ -955,6 +957,20 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
       }
     }
 
+    // Validate caixa date matches comanda date
+    const selectedCaixaObj = openCaixas.find(c => c.id === caixaToUse);
+    if (selectedCaixaObj && !isSameDay(new Date(selectedCaixaObj.opened_at), comandaDate)) {
+      const caixaDateStr = format(new Date(selectedCaixaObj.opened_at), "dd/MM/yyyy");
+      const comandaDateStr = format(comandaDate, "dd/MM/yyyy");
+      toast({
+        title: "Data do caixa não corresponde",
+        description: `A comanda é do dia ${comandaDateStr}, mas o caixa selecionado é do dia ${caixaDateStr}. Selecione ou abra um caixa do mesmo dia.`,
+        variant: "destructive",
+      });
+      setActiveTab("pagamento");
+      return;
+    }
+
     // Validate card payments have brand selected
     const cardWithoutBrand = payments.find(
       p => (p.method === 'credit_card' || p.method === 'debit_card') && !p.cardBrandId && p.amount > 0
@@ -1628,8 +1644,8 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             </TabsContent>
 
             <TabsContent value="pagamento" className="space-y-4 mt-4">
-              {/* Caixa Selection - show for master always, others only when not from today */}
-              {(!isFromToday || isMaster) && (
+              {/* Caixa Selection - always show so user sees which caixa will be used */}
+              {(
                 <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
