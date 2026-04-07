@@ -84,7 +84,7 @@ export function CaixaDetailModal({ open, onClose, caixa }: CaixaDetailModalProps
         return `${labels[p.payment_method] || p.payment_method}: R$ ${Number(p.amount).toFixed(2)}`;
       }).join(", ");
       return `<tr>
-        <td style="padding:4px 8px;border-bottom:1px solid #eee">#${cmd.id.slice(0, 4).toUpperCase()}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #eee">#${cmd.comanda_number ? String(cmd.comanda_number).padStart(4, '0') : cmd.id.slice(0, 4).toUpperCase()}</td>
         <td style="padding:4px 8px;border-bottom:1px solid #eee">${(cmd.client as any)?.name || "Avulso"}</td>
         <td style="padding:4px 8px;border-bottom:1px solid #eee">${(cmd.professional as any)?.name || "-"}</td>
         <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">R$ ${(cmd.total || 0).toFixed(2)}</td>
@@ -282,7 +282,7 @@ export function CaixaDetailModal({ open, onClose, caixa }: CaixaDetailModalProps
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="font-medium text-sm">
-                              #{cmd.id.slice(0, 4).toUpperCase()} — {(cmd.client as any)?.name || "Cliente avulso"}
+                              #{cmd.comanda_number ? String(cmd.comanda_number).padStart(4, '0') : cmd.id.slice(0, 4).toUpperCase()} — {(cmd.client as any)?.name || "Cliente avulso"}
                             </span>
                             {(cmd.professional as any)?.name && (
                               <span className="text-xs text-muted-foreground ml-2">

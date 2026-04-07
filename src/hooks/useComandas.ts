@@ -19,6 +19,7 @@ export interface Comanda {
   professional_id: string | null;
   appointment_id: string | null;
   caixa_id: string | null;
+  comanda_number: number | null;
   subtotal: number;
   discount: number;
   total: number;

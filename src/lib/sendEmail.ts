@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/dynamicSupabaseClient";
 
 interface SendEmailParams {
-  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_confirmation" | "appointment_reminder" | "appointment_update" | "appointment_cancellation";
+  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_created" | "appointment_confirmation" | "appointment_reminder" | "appointment_update" | "appointment_cancellation";
   salon_id: string;
   to_email: string;
   to_name: string;

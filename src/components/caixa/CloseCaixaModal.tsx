@@ -228,7 +228,7 @@ export function CloseCaixaModal({ open, onClose, onConfirm, caixa, isLoading }: 
         <div style="margin-bottom:16px;border:1px solid #ddd;border-radius:6px;overflow:hidden">
           <div style="background:#f5f5f5;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
             <div>
-              <strong>#${cmd.id.slice(0, 4).toUpperCase()}</strong> — ${clientName}
+              <strong>#${cmd.comanda_number ? String(cmd.comanda_number).padStart(4, '0') : cmd.id.slice(0, 4).toUpperCase()}</strong> — ${clientName}
               <span style="color:#666;margin-left:8px;font-size:12px">(${profName})</span>
             </div>
             <div style="text-align:right">

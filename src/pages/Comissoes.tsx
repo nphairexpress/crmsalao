@@ -185,7 +185,7 @@ export default function Comissoes() {
 
         items.push({
           comandaId: comanda.id,
-          comandaNumber: `Nº${String(idx + 1).padStart(4, "0")} (${displayDate})`,
+          comandaNumber: `Nº${comanda.comanda_number ? String(comanda.comanda_number).padStart(4, "0") : String(idx + 1).padStart(4, "0")} (${displayDate})`,
           date: displayDate,
           serviceName: `${item.quantity || 1} x ${serviceName}`,
           clientName: comanda.client_id ? clientMap.get(comanda.client_id) || "Cliente" : "Cliente avulso",

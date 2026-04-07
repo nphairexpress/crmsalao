@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_confirmation" | "appointment_reminder" | "appointment_update" | "appointment_cancellation";
+  type: "cashback" | "expiring" | "birthday" | "welcome" | "campaign" | "return_reminder" | "appointment_created" | "appointment_confirmation" | "appointment_reminder" | "appointment_update" | "appointment_cancellation";
   salon_id: string;
   to_email: string;
   to_name: string;
@@ -204,6 +204,24 @@ function buildEmailContent(
       return { subject, html: generateHtml(logoUrl, salonName, "Hora de Retornar! 💇", body, subject) };
     }
 
+    case "appointment_created": {
+      const subject = `📋 Agendamento criado no ${salonName}!`;
+      const serviceLines = (vars.service_name || "").split("\n").filter(Boolean);
+      const serviceHtml = serviceLines.length > 1
+        ? serviceLines.map(s => highlightBox(`${s}`, "💇‍♀️", "#6366f1")).join("")
+        : highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#6366f1");
+      const body = `
+        <p>Olá <strong>${name}</strong>! 👋</p>
+        <p>Seu agendamento foi <strong>criado</strong> com sucesso! Confira os detalhes:</p>
+        ${serviceHtml}
+        ${highlightBox(`<strong>Data:</strong> ${vars.date} às <strong>${vars.time}</strong>`, "📅", "#f59e0b")}
+        ${highlightBox(`<strong>Profissional:</strong> ${vars.professional_name || "Não informado"}`, "👤", "#3b82f6")}
+        ${highlightBox(`<strong>Status:</strong> Aguardando confirmação`, "⏳", "#f59e0b")}
+        <p>Você receberá uma confirmação em breve. Caso precise alterar, entre em contato conosco. 😊</p>
+        <p style="margin-top:24px;">Com carinho,<br/><strong>${salonName}</strong> 💜</p>`;
+      return { subject, html: generateHtml(logoUrl, salonName, "Agendamento Criado! 📋", body, subject) };
+    }
+
     case "appointment_confirmation": {
       const subject = `✅ Agendamento confirmado no ${salonName}!`;
       const serviceLines = (vars.service_name || "").split("\n").filter(Boolean);
@@ -212,7 +230,7 @@ function buildEmailContent(
         : highlightBox(`<strong>Serviço:</strong> ${vars.service_name || "Não informado"}`, "💇‍♀️", "#6366f1");
       const body = `
         <p>Olá <strong>${name}</strong>! 👋</p>
-        <p>Seu agendamento foi confirmado com sucesso! Confira os detalhes:</p>
+        <p>Seu agendamento foi <strong>confirmado</strong> com sucesso! ✅</p>
         ${serviceHtml}
         ${highlightBox(`<strong>Data:</strong> ${vars.date} às <strong>${vars.time}</strong>`, "📅", "#10b981")}
         ${highlightBox(`<strong>Profissional:</strong> ${vars.professional_name || "Não informado"}`, "👤", "#3b82f6")}

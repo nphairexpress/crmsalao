@@ -312,7 +312,8 @@ export default function Comandas() {
   const getComandaNumber = (comanda: Comanda) => {
     const date = new Date(comanda.created_at);
     const dateStr = format(date, "dd/MM/yyyy");
-    return `Nº${comanda.id.slice(0, 4).toUpperCase()} (${dateStr})`;
+    const num = comanda.comanda_number ? String(comanda.comanda_number).padStart(4, "0") : comanda.id.slice(0, 4).toUpperCase();
+    return `Nº${num} (${dateStr})`;
   };
 
   const handleOpenComanda = (comanda: Comanda, isEditing = false) => {
@@ -370,7 +371,7 @@ export default function Comandas() {
           .eq("status", "active");
 
         if (clientPkgs) {
-          const comandaRef = comandaToDelete.id.slice(0, 8);
+          const comandaRef = comandaToDelete.comanda_number ? String(comandaToDelete.comanda_number).padStart(4, "0") : comandaToDelete.id.slice(0, 8);
           for (const pkg of clientPkgs) {
             // Match by comanda reference in notes or by timing
             if (pkg.notes && pkg.notes.includes(comandaRef)) {

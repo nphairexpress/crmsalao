@@ -161,6 +161,44 @@ serve(async (req) => {
           .single();
 
         if (error) throw error;
+
+        // Send confirmation email if client has email
+        if (data.id && client_id) {
+          try {
+            const { data: client } = await supabase.from("clients").select("name, email").eq("id", client_id).single();
+            if (client?.email) {
+              const { data: service } = await supabase.from("services").select("name").eq("id", service_id).single();
+              const { data: prof } = await supabase.from("professionals").select("name").eq("id", professional_id).single();
+              const scheduledDate = new Date(data.scheduled_at);
+              const dateStr = scheduledDate.toLocaleDateString("pt-BR");
+              const timeStr = scheduledDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+              await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  type: "appointment_created",
+                  salon_id: salonId,
+                  to_email: client.email,
+                  to_name: client.name || "Cliente",
+                  client_id: client_id,
+                  variables: {
+                    service_name: service?.name || notes || "Não informado",
+                    professional_name: prof?.name || "Não informado",
+                    date: dateStr,
+                    time: timeStr,
+                  },
+                }),
+              });
+            }
+          } catch (emailError) {
+            console.error("Email send error:", emailError);
+          }
+        }
+
         return json({ appointment: data });
       }
 
@@ -246,8 +284,175 @@ serve(async (req) => {
         return json({ date, professional_id, available_slots: availableSlots });
       }
 
+      // ===== LIST APPOINTMENTS =====
+      case "list_appointments": {
+        const { date, status: filterStatus } = body;
+        if (!date) return json({ error: "date required (YYYY-MM-DD)" }, 400);
+
+        const startOfDay = `${date}T00:00:00`;
+        const endOfDay = `${date}T23:59:59`;
+
+        let query = supabase
+          .from("appointments")
+          .select(`
+            id, scheduled_at, duration_minutes, status, notes, price,
+            clients(id, name, phone, email),
+            professionals(id, name, nickname),
+            services(id, name)
+          `)
+          .eq("salon_id", salonId)
+          .gte("scheduled_at", startOfDay)
+          .lte("scheduled_at", endOfDay)
+          .order("scheduled_at");
+
+        if (filterStatus) {
+          query = query.eq("status", filterStatus);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return json({ appointments: data });
+      }
+
+      // ===== CONFIRM APPOINTMENT =====
+      case "confirm_appointment": {
+        const { appointment_id } = body;
+        if (!appointment_id) return json({ error: "appointment_id required" }, 400);
+
+        const { data, error } = await supabase
+          .from("appointments")
+          .update({ status: "confirmed" })
+          .eq("id", appointment_id)
+          .select("id, scheduled_at, status, clients(name, email), services(name), professionals(name)")
+          .single();
+
+        if (error) throw error;
+
+        // Send confirmation email
+        if (data.clients?.email) {
+          try {
+            const scheduledDate = new Date(data.scheduled_at);
+            const dateStr = scheduledDate.toLocaleDateString("pt-BR");
+            const timeStr = scheduledDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+            await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                type: "appointment_confirmation",
+                salon_id: salonId,
+                to_email: data.clients.email,
+                to_name: data.clients.name || "Cliente",
+                variables: {
+                  service_name: data.services?.name || "Não informado",
+                  professional_name: data.professionals?.name || "Não informado",
+                  date: dateStr,
+                  time: timeStr,
+                },
+              }),
+            });
+          } catch (e) { console.error("Confirm email error:", e); }
+        }
+
+        return json({ appointment: data });
+      }
+
+      // ===== CANCEL APPOINTMENT =====
+      case "cancel_appointment": {
+        const { appointment_id } = body;
+        if (!appointment_id) return json({ error: "appointment_id required" }, 400);
+
+        const { data, error } = await supabase
+          .from("appointments")
+          .update({ status: "cancelled" })
+          .eq("id", appointment_id)
+          .select("id, scheduled_at, status, clients(name, email), services(name), professionals(name)")
+          .single();
+
+        if (error) throw error;
+
+        if (data.clients?.email) {
+          try {
+            const scheduledDate = new Date(data.scheduled_at);
+            const dateStr = scheduledDate.toLocaleDateString("pt-BR");
+            const timeStr = scheduledDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+            await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                type: "appointment_cancellation",
+                salon_id: salonId,
+                to_email: data.clients.email,
+                to_name: data.clients.name || "Cliente",
+                variables: {
+                  service_name: data.services?.name || "Não informado",
+                  professional_name: data.professionals?.name || "Não informado",
+                  date: dateStr,
+                  time: timeStr,
+                },
+              }),
+            });
+          } catch (e) { console.error("Cancel email error:", e); }
+        }
+
+        return json({ appointment: data });
+      }
+
+      // ===== RESCHEDULE APPOINTMENT =====
+      case "reschedule_appointment": {
+        const { appointment_id, scheduled_at: newScheduledAt } = body;
+        if (!appointment_id) return json({ error: "appointment_id required" }, 400);
+        if (!newScheduledAt) return json({ error: "scheduled_at required (new date/time)" }, 400);
+
+        const { data, error } = await supabase
+          .from("appointments")
+          .update({ scheduled_at: newScheduledAt, status: "scheduled" })
+          .eq("id", appointment_id)
+          .select("id, scheduled_at, status, clients(name, email), services(name), professionals(name)")
+          .single();
+
+        if (error) throw error;
+
+        if (data.clients?.email) {
+          try {
+            const scheduledDate = new Date(data.scheduled_at);
+            const dateStr = scheduledDate.toLocaleDateString("pt-BR");
+            const timeStr = scheduledDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+            await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                type: "appointment_update",
+                salon_id: salonId,
+                to_email: data.clients.email,
+                to_name: data.clients.name || "Cliente",
+                variables: {
+                  service_name: data.services?.name || "Não informado",
+                  professional_name: data.professionals?.name || "Não informado",
+                  date: dateStr,
+                  time: timeStr,
+                },
+              }),
+            });
+          } catch (e) { console.error("Reschedule email error:", e); }
+        }
+
+        return json({ appointment: data });
+      }
+
       default:
-        return json({ error: `Unknown action: ${action}. Available: list_services, list_professionals, search_client, create_client, create_appointment, add_credit, list_available_slots` }, 400);
+        return json({ error: `Unknown action: ${action}. Available: list_services, list_professionals, search_client, create_client, create_appointment, list_appointments, confirm_appointment, cancel_appointment, reschedule_appointment, add_credit, list_available_slots` }, 400);
     }
   } catch (error) {
     console.error("Webhook error:", error);

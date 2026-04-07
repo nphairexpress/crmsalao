@@ -48,7 +48,7 @@ export function DeleteComandaModal({ comanda, open, onClose, onConfirm, isDeleti
 
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              Comanda: <span className="font-medium text-foreground">{comanda.id.slice(0, 4).toUpperCase()}</span>
+              Comanda: <span className="font-medium text-foreground">{comanda.comanda_number ? String(comanda.comanda_number).padStart(4, "0") : comanda.id.slice(0, 4).toUpperCase()}</span>
             </p>
             <p className="text-sm text-muted-foreground">
               Cliente: <span className="font-medium text-foreground">{comanda.client?.name || "Não definido"}</span>

@@ -228,7 +228,7 @@ export function CaixaCard({
                       <div key={cmd.id} className="bg-muted/50 rounded-md p-2.5 text-xs space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="font-medium">
-                            #{cmd.id.slice(0, 4).toUpperCase()} — {(cmd.client as any)?.name || "Cliente avulso"}
+                            #{cmd.comanda_number ? String(cmd.comanda_number).padStart(4, "0") : cmd.id.slice(0, 4).toUpperCase()} — {(cmd.client as any)?.name || "Cliente avulso"}
                           </span>
                           <div className="flex items-center gap-1">
                             <span className="font-semibold text-primary">{formatCurrency(cmd.total || 0)}</span>

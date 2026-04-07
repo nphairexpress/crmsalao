@@ -159,7 +159,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
           package_id: pkg.id,
           total_paid: Number(pkg.price),
           status: "active",
-          notes: `Vendido via comanda #${comanda.id.slice(0, 8)}`,
+          notes: `Vendido via comanda #${comandaRef}`,
         });
       }
 
@@ -233,7 +233,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         quantity: 1,
         previous_stock: product.current_stock,
         new_stock: product.current_stock - 1,
-        notes: `Venda comanda #${comanda.id.slice(0, 8)}`,
+        notes: `Venda comanda #${comandaRef}`,
       });
 
       toast({ title: `Produto "${product.name}" adicionado!` });
@@ -365,8 +365,9 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
 
   const getComandaNumber = () => {
     if (!comanda) return "";
-    return comanda.id.slice(0, 4).toUpperCase();
+    return comanda.comanda_number ? String(comanda.comanda_number).padStart(4, "0") : comandaRef;
   };
+  const comandaRef = getComandaNumber();
 
   const handleAddService = async (serviceId: string) => {
     if (!comanda || !salonId) return;
@@ -412,7 +413,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
                 service_id: serviceId,
                 comanda_id: comanda.id,
                 professional_id: comanda.professional_id || null,
-                notes: `Uso automático via comanda #${comanda.id.slice(0, 8)}`,
+                notes: `Uso automático via comanda #${comandaRef}`,
               });
 
               const pkgName = (cp as any).package?.name || "Pacote";
@@ -466,8 +467,8 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             price: finalPrice,
             status: "in_progress",
             notes: usedPackageCredit
-              ? `Criado via comanda ${comanda.id.slice(0, 4).toUpperCase()} — ${packageLabel}`
-              : `Criado via comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
+              ? `Criado via comanda ${comandaRef} — ${packageLabel}`
+              : `Criado via comanda ${comandaRef}`,
           });
 
         if (error) {
@@ -572,7 +573,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
           client_id: comanda.client_id,
           salon_id: salonId,
           action_type: "comanda_edit",
-          description: `Item "${item.description}" editado na comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
+          description: `Item "${item.description}" editado na comanda ${comandaRef}`,
           old_value: oldValues,
           new_value: { quantity: newQuantity, unit_price: newUnitPrice, total_price: newTotalPrice },
           performed_by: user.id,
@@ -779,7 +780,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
 
   const handlePrintReceipt = () => {
     if (!comanda) return;
-    const comandaNumber = comanda.id.slice(0, 4).toUpperCase();
+    const comandaNumber = comandaRef;
     const dateStr = comanda.created_at
       ? format(new Date(comanda.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
       : "";
@@ -1199,7 +1200,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             client_id: comanda.client_id,
             comanda_id: comanda.id,
             debt_amount: Math.round(difference * 100) / 100,
-            notes: `Dívida da comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
+            notes: `Dívida da comanda ${comandaRef}`,
           });
         } catch (debtError) {
           console.error("Erro ao salvar dívida:", debtError);
@@ -1217,7 +1218,7 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
               client_id: comanda.client_id,
               type: "credit",
               amount: Math.round(debtAmount * 100) / 100,
-              description: `Pagamento de divida anterior via comanda ${comanda.id.slice(0, 4).toUpperCase()}`,
+              description: `Pagamento de divida anterior via comanda ${comandaRef}`,
               comanda_id: comanda.id,
             });
           } catch (balanceError) {
