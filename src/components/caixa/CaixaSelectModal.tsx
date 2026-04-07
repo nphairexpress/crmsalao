@@ -29,11 +29,8 @@ export function CaixaSelectModal({
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
   };
 
-  // Filter caixas that are open and from the same day as the comanda
-  const availableCaixas = caixas.filter(c => {
-    const caixaDate = new Date(c.opened_at);
-    return !c.closed_at && isSameDay(caixaDate, comandaDate);
-  });
+  // Use caixas as already filtered by parent (ComandaModal handles master vs normal filtering)
+  const availableCaixas = caixas.filter(c => !c.closed_at);
 
   const handleSelect = (caixaId: string) => {
     onSelect(caixaId);
@@ -101,7 +98,7 @@ export function CaixaSelectModal({
                             )}
                           </h4>
                           <p className="text-xs text-muted-foreground">
-                            Aberto: {format(new Date(caixa.opened_at), "HH:mm", { locale: ptBR })}
+                            Aberto: {format(new Date(caixa.opened_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                           </p>
                         </div>
                       </div>

@@ -259,10 +259,12 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
   const canCloseOthers = hasPermission("comandas.view_others");
   const canFinalizeComanda = isMaster || isOwnComanda || canCloseOthers;
 
-  // Get available caixas for the comanda date
+  // Get available caixas - master sees all open caixas, others only same-day
   const availableCaixas = openCaixas.filter(c => {
+    if (c.closed_at) return false;
+    if (isMaster) return true;
     const caixaDate = new Date(c.opened_at);
-    return !c.closed_at && isSameDay(caixaDate, comandaDate);
+    return isSameDay(caixaDate, comandaDate);
   });
 
   // Set initial caixa - prefer user's caixa if from today, otherwise require selection
@@ -1626,8 +1628,8 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             </TabsContent>
 
             <TabsContent value="pagamento" className="space-y-4 mt-4">
-              {/* Caixa Selection - show when not from today OR when master/manager has multiple caixas */}
-              {(!isFromToday || (isMaster && availableCaixas.length > 1)) && (
+              {/* Caixa Selection - show for master always, others only when not from today */}
+              {(!isFromToday || isMaster) && (
                 <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">

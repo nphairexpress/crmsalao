@@ -74,17 +74,19 @@ export function useCaixas() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !salonId) throw new Error("Usuário não autenticado");
 
-      // Check if user has an open caixa
+      // Check if user has ANY open caixa (regardless of date)
       const { data: existingOpen } = await supabase
         .from("caixas")
-        .select("id")
+        .select("id, opened_at")
         .eq("salon_id", salonId)
         .eq("user_id", user.id)
         .is("closed_at", null)
-        .maybeSingle();
+        .limit(1);
 
-      if (existingOpen) {
-        throw new Error("Você já possui um caixa aberto. Feche o caixa anterior antes de abrir um novo.");
+      if (existingOpen && existingOpen.length > 0) {
+        const openDate = new Date(existingOpen[0].opened_at);
+        const dateStr = openDate.toLocaleDateString("pt-BR");
+        throw new Error(`Você já possui um caixa aberto (${dateStr}). Feche-o antes de abrir um novo.`);
       }
 
       const { data, error } = await supabase
@@ -284,20 +286,19 @@ export function useCaixas() {
     },
   });
 
-  // Get the current user's open caixa
+  // Get the current user's open caixa (any date — user must close before opening new)
   const getCurrentUserOpenCaixa = async (): Promise<Caixa | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !salonId) return null;
 
-    const today = new Date();
     const { data: caixaData, error } = await supabase
       .from("caixas")
       .select("*")
       .eq("salon_id", salonId)
       .eq("user_id", user.id)
       .is("closed_at", null)
-      .gte("opened_at", startOfDay(today).toISOString())
-      .lte("opened_at", endOfDay(today).toISOString())
+      .order("opened_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) {
