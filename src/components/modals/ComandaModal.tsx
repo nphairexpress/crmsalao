@@ -163,12 +163,12 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         });
       }
 
-      // 2. Add package as item in comanda
+      // 2. Add package as item in comanda — use comanda's professional so commission is attributed
       await addItem({
         comanda_id: comanda.id,
         service_id: null,
         product_id: null,
-        professional_id: null,
+        professional_id: comanda.professional_id || null,
         description: `📦 Pacote: ${pkg.name}`,
         item_type: "package",
         quantity: 1,
