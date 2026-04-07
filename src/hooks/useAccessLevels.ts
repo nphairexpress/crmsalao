@@ -46,7 +46,7 @@ export interface PermissionFeature {
 export const PERMISSION_FEATURES: PermissionFeature[] = [
   { key: "agenda", label: "Agenda", actions: ["view", "edit", "delete", "view_others"] },
   { key: "agenda_bloqueios", label: "Agenda Bloqueios", actions: ["view", "edit", "delete"] },
-  { key: "caixas", label: "Caixas", actions: ["view", "edit", "delete"] },
+  { key: "caixas", label: "Caixas", actions: ["view", "view_others", "edit", "delete"] },
   { key: "clientes_dados", label: "Clientes Dados", actions: ["view", "edit", "delete"] },
   { key: "clientes_historico", label: "Clientes Histórico", actions: ["view"] },
   { key: "comandas", label: "Comandas", actions: ["view", "edit", "delete", "view_others"] },
@@ -80,7 +80,7 @@ export const PERMISSION_CATEGORIES = {
   services: { label: "Serviços", permissions: ["servicos.view", "servicos.edit", "servicos.delete"] },
   products: { label: "Produtos/Estoque", permissions: ["estoque_produtos.view", "estoque_produtos.edit", "estoque_produtos.delete"] },
   financial: { label: "Financeiro", permissions: ["entradas_saidas.view", "entradas_saidas.edit", "entradas_saidas.delete"] },
-  caixa: { label: "Caixa", permissions: ["caixas.view", "caixas.edit", "caixas.delete"] },
+  caixa: { label: "Caixa", permissions: ["caixas.view", "caixas.view_others", "caixas.edit", "caixas.delete"] },
   commissions: { label: "Comissões", permissions: ["comissoes.view", "comissoes.edit"] },
   settings: { label: "Configurações", permissions: ["informacoes.view", "informacoes.edit", "grupo_acessos.view"] },
 };

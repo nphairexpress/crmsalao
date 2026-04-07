@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Loader2, CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCaixas, Caixa } from "@/hooks/useCaixas";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentUserPermissions } from "@/hooks/useCurrentUserPermissions";
 import { CaixaCard } from "@/components/caixa/CaixaCard";
 import { OpenCaixaModal } from "@/components/caixa/OpenCaixaModal";
 import { CloseCaixaModal } from "@/components/caixa/CloseCaixaModal";
@@ -28,12 +29,14 @@ export default function Financeiro() {
   const [userOpenCaixa, setUserOpenCaixa] = useState<Caixa | null>(null);
 
   const { user } = useAuth();
-  const { 
-    caixas, 
-    openCaixas, 
-    closedCaixas, 
-    isLoading, 
-    openCaixa, 
+  const { isMaster, hasPermission } = useCurrentUserPermissions();
+  const canViewAllCaixas = isMaster || hasPermission("caixas.view_others");
+  const {
+    caixas,
+    openCaixas: allOpenCaixas,
+    closedCaixas: allClosedCaixas,
+    isLoading,
+    openCaixa,
     closeCaixa,
     reopenCaixa,
     updateCaixa,
@@ -43,6 +46,14 @@ export default function Financeiro() {
     isReopening,
     isUpdating,
   } = useCaixas();
+
+  // Filter caixas: normal users only see their own, managers/master see all
+  const openCaixas = canViewAllCaixas
+    ? allOpenCaixas
+    : allOpenCaixas.filter(c => c.user_id === user?.id);
+  const closedCaixas = canViewAllCaixas
+    ? allClosedCaixas
+    : allClosedCaixas.filter(c => c.user_id === user?.id);
 
   // Determine active tab from URL
   const isHistorico = location.pathname.includes("/historico");
@@ -146,8 +157,8 @@ export default function Financeiro() {
                     <CaixaCard
                       key={caixa.id}
                       caixa={caixa}
-                      showCloseButton={true}
-                      showEditButton={true}
+                      showCloseButton={canViewAllCaixas}
+                      showEditButton={canViewAllCaixas}
                       onClose={() => handleOpenCloseModal(caixa)}
                       onEdit={() => handleOpenEditModal(caixa)}
                     />
