@@ -19,9 +19,11 @@ interface CaixaCardProps {
   onView?: () => void;
   onEdit?: () => void;
   onReopen?: () => void;
+  onRecalculate?: () => void;
   showCloseButton?: boolean;
   showEditButton?: boolean;
   showReopenButton?: boolean;
+  isRecalculating?: boolean;
 }
 
 export function CaixaCard({
@@ -32,9 +34,11 @@ export function CaixaCard({
   onView,
   onEdit,
   onReopen,
+  onRecalculate,
   showCloseButton = false,
   showEditButton = false,
   showReopenButton = false,
+  isRecalculating = false,
 }: CaixaCardProps) {
   const [showComandas, setShowComandas] = useState(false);
   const navigate = useNavigate();
@@ -289,8 +293,14 @@ export function CaixaCard({
         </div>
 
         {/* Actions */}
-        {(showCloseButton || onView || showEditButton || showReopenButton) && (
+        {(showCloseButton || onView || showEditButton || showReopenButton || onRecalculate) && (
           <div className="px-4 pb-4 flex gap-2 flex-wrap">
+            {onRecalculate && (
+              <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={onRecalculate} disabled={isRecalculating}>
+                {isRecalculating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                {isRecalculating ? "Recalculando..." : "Recalcular"}
+              </Button>
+            )}
             {showReopenButton && onReopen && caixa.closed_at && (
               <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={onReopen}>
                 <RotateCcw className="h-4 w-4" />

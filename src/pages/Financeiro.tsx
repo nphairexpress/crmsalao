@@ -41,10 +41,12 @@ export default function Financeiro() {
     reopenCaixa,
     updateCaixa,
     getCurrentUserOpenCaixa,
+    recalculateCaixaTotals,
     isOpening,
     isClosing,
     isReopening,
     isUpdating,
+    isRecalculating,
   } = useCaixas();
 
   // Filter caixas: normal users only see their own, managers/master see all
@@ -147,6 +149,8 @@ export default function Financeiro() {
                       caixa={userOpenCaixa}
                       showCloseButton
                       onClose={() => handleOpenCloseModal(userOpenCaixa)}
+                      onRecalculate={canViewAllCaixas ? () => recalculateCaixaTotals(userOpenCaixa.id) : undefined}
+                      isRecalculating={isRecalculating}
                       label="Seu Caixa"
                     />
                   </div>
@@ -161,6 +165,8 @@ export default function Financeiro() {
                       showEditButton={canViewAllCaixas}
                       onClose={() => handleOpenCloseModal(caixa)}
                       onEdit={() => handleOpenEditModal(caixa)}
+                      onRecalculate={canViewAllCaixas ? () => recalculateCaixaTotals(caixa.id) : undefined}
+                      isRecalculating={isRecalculating}
                     />
                   ))}
               </div>
@@ -308,6 +314,8 @@ export default function Financeiro() {
                       onEdit={() => handleOpenEditModal(caixa)}
                       onReopen={() => handleReopenCaixa(caixa)}
                       onView={() => { setSelectedCaixa(caixa); setDetailCaixaModalOpen(true); }}
+                      onRecalculate={canViewAllCaixas ? () => recalculateCaixaTotals(caixa.id) : undefined}
+                      isRecalculating={isRecalculating}
                     />
                   ))}
                 </div>

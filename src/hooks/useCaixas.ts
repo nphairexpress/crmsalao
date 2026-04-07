@@ -228,6 +228,62 @@ export function useCaixas() {
     },
   });
 
+  // Recalculate caixa totals from actual payment records
+  const recalculateCaixaTotalsMutation = useMutation({
+    mutationFn: async (caixaId: string) => {
+      // Get all comandas linked to this caixa
+      const { data: comandas, error: comandasError } = await supabase
+        .from("comandas")
+        .select("id")
+        .eq("caixa_id", caixaId);
+      if (comandasError) throw comandasError;
+
+      const comandaIds = (comandas || []).map(c => c.id);
+
+      // Sum payments by method from actual payment records
+      const totals = { cash: 0, pix: 0, credit_card: 0, debit_card: 0, other: 0 };
+
+      if (comandaIds.length > 0) {
+        const { data: payments, error: paymentsError } = await supabase
+          .from("payments")
+          .select("payment_method, amount")
+          .in("comanda_id", comandaIds);
+        if (paymentsError) throw paymentsError;
+
+        for (const p of (payments || [])) {
+          const method = p.payment_method as keyof typeof totals;
+          if (method in totals) {
+            totals[method] += Number(p.amount);
+          }
+        }
+      }
+
+      // Update caixa with recalculated totals
+      const { data, error } = await supabase
+        .from("caixas")
+        .update({
+          total_cash: totals.cash,
+          total_pix: totals.pix,
+          total_credit_card: totals.credit_card,
+          total_debit_card: totals.debit_card,
+          total_other: totals.other,
+        })
+        .eq("id", caixaId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["caixas", salonId] });
+      toast({ title: "Totais do caixa recalculados com sucesso" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro ao recalcular totais", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Get the current user's open caixa
   const getCurrentUserOpenCaixa = async (): Promise<Caixa | null> => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -286,11 +342,13 @@ export function useCaixas() {
     reopenCaixa: reopenCaixaMutation.mutate,
     updateCaixa: updateCaixaMutation.mutate,
     updateCaixaTotals: updateCaixaTotalsMutation.mutate,
+    recalculateCaixaTotals: recalculateCaixaTotalsMutation.mutate,
     getCurrentUserOpenCaixa,
     getCaixasByDate,
     isOpening: openCaixaMutation.isPending,
     isClosing: closeCaixaMutation.isPending,
     isReopening: reopenCaixaMutation.isPending,
     isUpdating: updateCaixaMutation.isPending,
+    isRecalculating: recalculateCaixaTotalsMutation.isPending,
   };
 }
