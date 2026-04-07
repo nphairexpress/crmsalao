@@ -154,6 +154,18 @@ export default function Comandas() {
         return;
       }
 
+      // Cannot open comanda for already paid appointments
+      if (appointmentData.status === "paid") {
+        toast({
+          title: "Agendamento já pago",
+          description: "Este agendamento já foi finalizado e pago. Não é possível abrir nova comanda.",
+          variant: "destructive"
+        });
+        searchParams.delete("appointment");
+        setSearchParams(searchParams);
+        return;
+      }
+
       // Check if client exists
       if (!appointmentData.client_id) {
         toast({

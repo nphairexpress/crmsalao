@@ -1074,6 +1074,24 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
         throw new Error(`Erro ao fechar comanda: ${closeError.message}`);
       }
 
+      // Update linked appointments to "paid" status
+      if (comanda.appointment_id) {
+        await supabase
+          .from("appointments")
+          .update({ status: "paid" })
+          .eq("id", comanda.appointment_id);
+      }
+      // Also update appointments linked via comanda_items.source_appointment_id
+      const appointmentIds = editableItems
+        .map(item => (item as any).source_appointment_id)
+        .filter(Boolean);
+      if (appointmentIds.length > 0) {
+        await supabase
+          .from("appointments")
+          .update({ status: "paid" })
+          .in("id", appointmentIds);
+      }
+
       // Deduct stock for all services in the comanda
       const serviceItems = editableItems
         .filter(item => item.service_id)

@@ -338,6 +338,13 @@ export function AppointmentModal({
       setCanOpenComanda(false);
       return;
     }
+
+    // Already paid: never allow
+    if (appointment.status === "paid") {
+      setCanOpenComanda(false);
+      return;
+    }
+
     const appointmentDate = new Date(appointment.scheduled_at);
     const today = new Date();
 
@@ -577,6 +584,7 @@ export function AppointmentModal({
                 <SelectItem value="confirmed">Confirmado</SelectItem>
                 <SelectItem value="in_progress">Em Atendimento</SelectItem>
                 <SelectItem value="completed">Finalizado</SelectItem>
+                <SelectItem value="paid">Pago</SelectItem>
                 <SelectItem value="no_show">Não Compareceu</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
               </SelectContent>
