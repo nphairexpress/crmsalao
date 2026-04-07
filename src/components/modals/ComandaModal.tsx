@@ -943,6 +943,20 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
       }
     }
 
+    // Validate card payments have brand selected
+    const cardWithoutBrand = payments.find(
+      p => (p.method === 'credit_card' || p.method === 'debit_card') && !p.cardBrandId && p.amount > 0
+    );
+    if (cardWithoutBrand) {
+      toast({
+        title: "Bandeira não selecionada",
+        description: "Selecione a bandeira do cartão para calcular a taxa da maquininha.",
+        variant: "destructive",
+      });
+      setActiveTab("pagamento");
+      return;
+    }
+
     // Validate payments
     if (difference > 0.01 && !saveUnderpaymentAsDebt) {
       toast({ 
