@@ -71,7 +71,8 @@ export function RevenueChart() {
       return days.map(({ name, receita }) => ({ name, receita }));
     },
     enabled: !!salonId,
-    refetchInterval: 60000,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   return (

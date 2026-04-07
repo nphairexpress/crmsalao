@@ -87,6 +87,10 @@ export function useComandas() {
     queryKey: ["comandas", salonId],
     queryFn: async () => {
       if (!salonId) return [];
+      // Limit to last 90 days for performance
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+
       const { data, error } = await supabase
         .from("comandas")
         .select(`
@@ -116,6 +120,7 @@ export function useComandas() {
           )
         `)
         .eq("salon_id", salonId)
+        .gte("created_at", cutoff.toISOString())
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Comanda[];

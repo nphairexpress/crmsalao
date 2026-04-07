@@ -85,7 +85,8 @@ export function UpcomingAppointments({ professionalId }: UpcomingAppointmentsPro
       }));
     },
     enabled: !!salonId,
-    refetchInterval: 30000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
   });
 
   return (

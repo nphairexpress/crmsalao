@@ -61,7 +61,8 @@ export function TopServices() {
       }));
     },
     enabled: !!salonId,
-    refetchInterval: 60000,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   return (

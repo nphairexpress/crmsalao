@@ -84,29 +84,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUserSalonId = async (userId: string) => {
-    const { data } = await supabase
+    // Fetch profile and role in parallel once we have the salon_id
+    const { data: profileData } = await supabase
       .from("profiles")
       .select("salon_id")
       .eq("user_id", userId)
       .maybeSingle();
-    
-    if (data?.salon_id) {
-      setSalonId(data.salon_id);
-      // Fetch user role
-      fetchUserRole(userId, data.salon_id);
-    }
-  };
 
-  const fetchUserRole = async (userId: string, salonId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("salon_id", salonId)
-      .maybeSingle();
-    
-    if (data?.role) {
-      setUserRole(data.role as AppRole);
+    if (profileData?.salon_id) {
+      setSalonId(profileData.salon_id);
+      // Fetch role immediately (no separate function call needed)
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("salon_id", profileData.salon_id)
+        .maybeSingle();
+      if (roleData?.role) {
+        setUserRole(roleData.role as AppRole);
+      }
     }
   };
 

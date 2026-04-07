@@ -116,7 +116,8 @@ export function ProfessionalCommissionSummary({ professionalId, commissionPercen
       return { totalServices, totalCommission, itemCount: items.length };
     },
     enabled: !!salonId && !!professionalId,
-    refetchInterval: 60000,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   return (
