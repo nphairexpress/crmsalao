@@ -1644,32 +1644,31 @@ export function ComandaModal({ comanda, open, onClose, professionals, services, 
             </TabsContent>
 
             <TabsContent value="pagamento" className="space-y-4 mt-4">
-              {/* Caixa Selection - always show so user sees which caixa will be used */}
-              {(
-                <Card className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Wallet className="h-5 w-5 text-orange-600" />
-                        <div>
-                          <p className="font-medium text-orange-800 dark:text-orange-200">Caixa para Fechamento</p>
-                          <p className="text-sm text-orange-600 dark:text-orange-400">
-                            {selectedCaixa ? `${selectedCaixa.profile?.full_name || 'Usuário'}` : 'Nenhum selecionado'}
-                          </p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setCaixaSelectModalOpen(true)}
-                        className="border-orange-400 text-orange-700"
-                      >
-                        {selectedCaixa ? 'Alterar' : 'Selecionar'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Caixa Selection - inline select */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">Caixa:</Label>
+                <Select
+                  value={selectedCaixaId || ""}
+                  onValueChange={(v) => setSelectedCaixaId(v || null)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione o caixa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCaixas.map((c) => {
+                      const caixaDate = new Date(c.opened_at);
+                      const sameDay = isSameDay(caixaDate, comandaDate);
+                      const name = c.profile?.full_name || "Usuário";
+                      const dateStr = format(caixaDate, "dd/MM", { locale: ptBR });
+                      return (
+                        <SelectItem key={c.id} value={c.id} disabled={!sameDay}>
+                          {name} ({dateStr}){!sameDay ? " — data diferente" : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* Summary Cards */}
               <div className="grid grid-cols-4 gap-4">
